@@ -17,6 +17,8 @@ interface WeekViewProps {
   activeHighlight?: string | null
   lockedDate?: string | null
   onMoveTask?: (taskId: string, newDate: string) => void
+  categoryColorMap?: Record<string, string>
+  selectedTaskId?: string | null
 }
 
 export function WeekView({
@@ -31,6 +33,8 @@ export function WeekView({
   activeHighlight,
   lockedDate,
   onMoveTask,
+  categoryColorMap,
+  selectedTaskId,
 }: WeekViewProps) {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
@@ -87,6 +91,8 @@ export function WeekView({
               onEmptyClick={onDayEmptyClick}
               onPlaySound={onPlaySound}
               onMoveTask={onMoveTask}
+              categoryColorMap={categoryColorMap}
+              selectedTaskId={selectedTaskId}
             />
           </div>
         )

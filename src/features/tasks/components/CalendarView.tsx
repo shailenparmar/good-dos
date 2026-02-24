@@ -196,6 +196,12 @@ export function CalendarView({ settingsOpen, onCloseSettings }: CalendarViewProp
     setColorsOpen(o => !o)
   }, [])
 
+  const categoryColorMap = useMemo(() => {
+    const map: Record<string, string> = {}
+    for (const c of categories) map[c.id] = c.color
+    return map
+  }, [categories])
+
   const currentSelectedTask = selectedTask
     ? tasks.find(t => t.id === selectedTask.id) ?? null
     : null
@@ -264,6 +270,8 @@ export function CalendarView({ settingsOpen, onCloseSettings }: CalendarViewProp
           onPrev={handlePrev}
           onNext={handleNext}
           onMoveTask={moveTaskToDate}
+          categoryColorMap={categoryColorMap}
+          selectedTaskId={selectedTask?.id ?? null}
         />
       ) : (
         <WeekView
@@ -278,6 +286,8 @@ export function CalendarView({ settingsOpen, onCloseSettings }: CalendarViewProp
           activeHighlight={highlightedDate}
           lockedDate={lockedDate}
           onMoveTask={moveTaskToDate}
+          categoryColorMap={categoryColorMap}
+          selectedTaskId={selectedTask?.id ?? null}
         />
       )}
     </div>

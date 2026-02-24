@@ -17,6 +17,8 @@ interface DayColumnProps {
   onEmptyClick: (dateStr: string) => void
   onPlaySound: (isSubtask: boolean) => void
   onMoveTask?: (taskId: string, newDate: string) => void
+  categoryColorMap?: Record<string, string>
+  selectedTaskId?: string | null
 }
 
 export function DayColumn({
@@ -33,6 +35,8 @@ export function DayColumn({
   onEmptyClick,
   onPlaySound,
   onMoveTask,
+  categoryColorMap,
+  selectedTaskId,
 }: DayColumnProps) {
   const dateStr = toDateString(date)
   const dayNum = date.getDate()
@@ -108,6 +112,8 @@ export function DayColumn({
             onCyclePriority={onCyclePriority}
             onClick={onTaskClick}
             onPlaySound={onPlaySound}
+            categoryColor={task.categoryId ? categoryColorMap?.[task.categoryId] : undefined}
+            isSelected={selectedTaskId === task.id}
             draggable
             onDragStart={e => {
               e.dataTransfer.setData('text/task-id', task.id)

@@ -26,7 +26,7 @@ export function ColorPicker({ type, part }: ColorPickerProps) {
   const setLight = isText ? setLightness : setBgLightness
 
   const dotSize = isDragging ? 24 : 12
-  const needleWidth = isDragging ? 24 : 8
+  const needleWidth = isDragging ? 12 : 4
 
   // Cleanup listeners on unmount
   useEffect(() => {
@@ -164,7 +164,7 @@ export function ColorPicker({ type, part }: ColorPickerProps) {
             left: needleLeft,
             width: `${needleWidth}px`,
             transform: 'translateX(-50%)',
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            backgroundColor: 'rgba(0, 0, 0, 1)',
           }}
         />
       </div>

@@ -17,6 +17,8 @@ interface MonthDayCellProps {
   onTaskClick: (task: Task) => void
   onPlaySound: (isSubtask: boolean, priority?: number) => void
   onMoveTask?: (taskId: string, newDate: string) => void
+  categoryColorMap?: Record<string, string>
+  selectedTaskId?: string | null
 }
 
 function getPriorityColor(priority: number): string {
@@ -27,8 +29,9 @@ function getPriorityColor(priority: number): string {
   }
 }
 
-export function MonthDayCell({ date, dateStr, tasks, isToday, isCurrentMonth, filterMatch = 'none', isActiveHighlight, isLockedDate, onClick, onToggle, onTaskClick, onPlaySound, onMoveTask }: MonthDayCellProps) {
+export function MonthDayCell({ date, dateStr, tasks, isToday, isCurrentMonth, filterMatch = 'none', isActiveHighlight, isLockedDate, onClick, onToggle, onTaskClick, onPlaySound, onMoveTask, categoryColorMap, selectedTaskId }: MonthDayCellProps) {
   const [isDragOver, setIsDragOver] = useState(false)
+  const [hoveredTaskId, setHoveredTaskId] = useState<string | null>(null)
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -131,75 +134,81 @@ export function MonthDayCell({ date, dateStr, tasks, isToday, isCurrentMonth, fi
         )}
       </div>
 
-      {/* Tasks — single column, shrinks to fit */}
+      {/* Tasks — box model: [text inside], fill=priority, border=category, X on complete */}
       {allTasks.length > 0 && (() => {
         const totalRows = allTasks.length
-        // Scale square + text down when many tasks
-        const sqSize = totalRows <= 3 ? 'clamp(20px, 3vw, 32px)' : totalRows <= 5 ? 'clamp(16px, 2.2vw, 24px)' : 'clamp(12px, 1.6vw, 18px)'
-        const txtSize = totalRows <= 3 ? 'clamp(12px, 1.6vw, 16px)' : totalRows <= 5 ? 'clamp(10px, 1.2vw, 13px)' : 'clamp(8px, 1vw, 11px)'
-        const gap = totalRows <= 3 ? '4px' : '2px'
+        const sqSize = totalRows <= 3 ? 'clamp(18px, 2.5vw, 28px)' : totalRows <= 5 ? 'clamp(14px, 2vw, 22px)' : 'clamp(10px, 1.4vw, 16px)'
+        const txtSize = totalRows <= 3 ? 'clamp(13px, 1.8vw, 18px)' : totalRows <= 5 ? 'clamp(11px, 1.4vw, 15px)' : 'clamp(9px, 1.1vw, 12px)'
+        const gap = totalRows <= 3 ? '3px' : '1px'
+        const pad = totalRows <= 3 ? '3px 6px' : '2px 4px'
 
         return (
           <div
-            className="relative z-10 h-full grid overflow-hidden p-1"
-            style={{
-              gridTemplateColumns: '1fr',
-              gap,
-            }}
+            className="relative z-10 h-full flex flex-col overflow-hidden p-1"
+            style={{ gap }}
           >
             {allTasks.map(task => {
-              const isDone = task.completed
+              const catColor = task.categoryId ? categoryColorMap?.[task.categoryId] : undefined
+              const borderColor = catColor ?? 'hsla(var(--h), var(--s), var(--l), 0.2)'
+
+              const isBold = hoveredTaskId === task.id || selectedTaskId === task.id
 
               return (
                 <div
                   key={task.id}
-                  className="flex items-center gap-1 min-w-0"
+                  className="flex items-stretch min-w-0"
+                  style={{ gap: '0px' }}
                   draggable
                   onDragStart={e => handleDragStart(e, task.id)}
+                  onMouseEnter={() => setHoveredTaskId(task.id)}
+                  onMouseLeave={() => setHoveredTaskId(null)}
                 >
-                  {isDone ? (
-                    <button
-                      className="flex-shrink-0 relative active:scale-75"
-                      style={{
-                        width: sqSize,
-                        height: sqSize,
-                        backgroundColor: 'transparent',
-                        border: '3px solid black',
-                      }}
-                      onClick={e => { e.stopPropagation(); onToggle(task.id) }}
-                    >
-                      <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                  {/* Square checkbox */}
+                  <div
+                    className="relative flex-shrink-0"
+                    style={{
+                      aspectRatio: '1',
+                      backgroundColor: getPriorityColor(task.priority),
+                      border: `3px solid ${borderColor}`,
+                    }}
+                    onClick={e => {
+                      e.stopPropagation()
+                      onPlaySound(false, task.priority)
+                      onToggle(task.id)
+                    }}
+                  >
+                    {task.completed && (
+                      <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
                         <line x1="0" y1="0" x2="100" y2="100" stroke="hsl(var(--h), var(--s), var(--l))" strokeWidth="12" />
                         <line x1="100" y1="0" x2="0" y2="100" stroke="hsl(var(--h), var(--s), var(--l))" strokeWidth="12" />
                       </svg>
-                    </button>
-                  ) : (
-                    <button
-                      className="flex-shrink-0 active:scale-75"
-                      style={{
-                        width: sqSize,
-                        height: sqSize,
-                        backgroundColor: getPriorityColor(task.priority),
-                        border: '3px solid black',
-                      }}
-                      onClick={e => handleSmack(task, e)}
-                    />
-                  )}
-                  <button
-                    className="flex-1 min-w-0 text-left truncate font-mono font-black hover:underline"
+                    )}
+                  </div>
+                  {/* Text rectangle */}
+                  <div
+                    className="flex-1 min-w-0 flex items-center"
                     style={{
-                      color: 'hsl(var(--h), var(--s), var(--l))',
-                      fontSize: txtSize,
-                      lineHeight: '1.2',
-                      textDecoration: isDone ? 'line-through' : 'none',
+                      border: `3px solid ${borderColor}`,
+                      borderLeft: 'none',
+                      padding: pad,
                     }}
                     onClick={e => {
                       e.stopPropagation()
                       onTaskClick(task)
                     }}
                   >
-                    {task.text || 'untitled'}
-                  </button>
+                    <span
+                      className="block w-full text-left truncate font-mono"
+                      style={{
+                        color: 'hsl(var(--h), var(--s), var(--l))',
+                        fontSize: txtSize,
+                        lineHeight: '1.2',
+                        fontWeight: isBold ? 700 : 400,
+                      }}
+                    >
+                      {task.text || 'untitled'}
+                    </span>
+                  </div>
                 </div>
               )
             })}

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
-import { toDateString } from '@shared/utils/date'
+import { toDateString, formatCalendarDay } from '@shared/utils/date'
 
 type Step = 'date' | 'name' | 'priority'
 
@@ -190,7 +190,8 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
       prefilling.current = true
       const match = allDateOptions.find(o => o.value === prefillDate)
       setLockedDate(prefillDate)
-      setLockedDateLabel(match?.label ?? prefillDate)
+      const fallback = (() => { const { dayName, dayNum } = formatCalendarDay(prefillDate); return `${dayName} ${dayNum}` })()
+      setLockedDateLabel(match?.label ?? fallback)
       setStep('name')
       setInputValue('')
       setHighlightIndex(0)
@@ -266,7 +267,7 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
           const current = prev ?? -1
           return (current + dir + opts.length) % opts.length
         })
-      } else if (e.key === 'Enter' || e.key === ' ') {
+      } else if (e.key === 'Enter') {
         e.preventDefault()
         // Select the tabbed date, or first filtered match, or first available
         const selected = (tabbedDateIndex !== null && allDateOptions[tabbedDateIndex])
@@ -389,27 +390,21 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
           </div>
         )}
 
-        {/* BREADCRUMB SQUARES — to the right of nav, before input */}
-        {lockedDateLabel && step !== 'date' && (() => {
-          const parts = lockedDateLabel.split(' ')
-          const hasAlias = parts[0] === 'today' || parts[0] === 'tomorrow'
-          const line1 = hasAlias ? parts[0] : null
-          const line2 = hasAlias ? parts.slice(1).join(' ') : lockedDateLabel
+        {/* BREADCRUMB — locked date as "FRI 27" */}
+        {lockedDate && step !== 'date' && (() => {
+          const { dayName, dayNum } = formatCalendarDay(lockedDate)
           return (
             <div
-              className="flex-shrink-0 flex flex-col items-center justify-center font-mono font-black uppercase"
+              className="flex-shrink-0 flex items-center justify-center font-mono font-black uppercase"
               style={{
                 padding: '0 clamp(8px, 1.2vw, 16px)',
                 color: 'hsl(var(--h), var(--s), var(--l))',
                 border: '6px solid hsla(var(--h), var(--s), var(--l), 0.5)',
                 backgroundColor: 'hsla(var(--h), var(--s), var(--l), 0.1)',
-                lineHeight: 1.1,
+                fontSize: 'clamp(13px, 1.8vw, 20px)',
               }}
             >
-              {line1 && (
-                <span style={{ fontSize: 'clamp(13px, 1.8vw, 20px)' }}>{line1}</span>
-              )}
-              <span style={{ fontSize: 'clamp(13px, 1.8vw, 20px)' }}>{line2}</span>
+              {dayName} {dayNum}
             </div>
           )
         })()}
