@@ -6,6 +6,21 @@
 
 **Dev server:** `npm run dev` → http://localhost:5173/
 
+## Auto-Update Workflow
+
+When making ANY UI/style/interaction change, you MUST also update `docs/STYLE_GUIDE.md` to reflect the change. This includes:
+- Border widths, alphas, or colors
+- Opacity values
+- Font sizes, weights
+- Spacing values
+- Highlight/shadow behavior
+- Task rendering format
+- Click/interaction patterns
+- Tab cycling behavior
+- New or changed color values
+
+Do this as part of the same edit session — not as a separate task.
+
 ## Tech Stack
 
 - Vite 7 + React 19 + TypeScript 5.9
@@ -251,3 +266,13 @@ Stored in `src/shared/version.ts` as `APP_VERSION`. Currently `0.1.0`.
 
 - **`toDateString()`** in `date.ts` uses local time formatting (getFullYear/getMonth/getDate), NOT `toISOString()` (UTC). This prevents timezone-related date shifts.
 - **Event handlers on interactive elements inside panels with click-outside listeners** must use `onMouseDown` + `e.stopPropagation()`, not `onClick`. The click-outside handler fires on `mousedown` at the document level and can unmount the panel before `click` fires.
+
+## Style Guide Auto-Update Workflow
+
+**`docs/STYLE_GUIDE.md`** is the single source of truth for visual design decisions. It must stay accurate as the codebase evolves.
+
+**When to update:** After ANY change that affects visual appearance — colors, borders, spacing, font sizes/weights, opacity values, highlight behaviors, animation, layout, or interaction patterns. This includes seemingly small changes like swapping a border alpha or tweaking a clamp value.
+
+**What to update:** Only the sections that changed. Don't rewrite untouched sections. Concrete values (hex colors, pixel widths, clamp ranges) must match the actual code exactly.
+
+**When committing:** If the style guide was updated as part of the work, include it in the same commit. If the work is already committed, add a follow-up commit for the style guide update.

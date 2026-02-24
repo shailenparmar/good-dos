@@ -16,10 +16,10 @@ All colors derive from 6 HSL CSS variables set on `:root`:
 |----------|------|---------|
 | `--h` | Text hue | 0 |
 | `--s` | Text saturation | 0% |
-| `--l` | Text lightness | 95% |
-| `--bh` | Background hue | 0 |
-| `--bs` | Background saturation | 0% |
-| `--bl` | Background lightness | 8% |
+| `--l` | Text lightness | 0% |
+| `--bh` | Background hue | 120 |
+| `--bs` | Background saturation | 100% |
+| `--bl` | Background lightness | 75% |
 
 ### Usage Patterns
 
@@ -39,91 +39,142 @@ background-color: hsla(var(--h), var(--s), var(--l), 0.07)
 
 ### Priority Colors
 
+Used as checkbox fill (`backgroundColor`):
+
 | Level | Value | Color |
 |-------|-------|-------|
-| None | 0 | Theme text at 0.5 alpha |
+| None | 0 | `transparent` |
 | Medium | 1 | `hsl(45, 90%, 55%)` — yellow |
 | High | 2 | `hsl(0, 80%, 55%)` — red |
 
+### TypeTag Colors
+
+Fixed palette in `TAG_COLORS` (`types.ts`), accessed via `tagColor(index)`:
+- Blue `hsl(210, 70%, 55%)`, Green `hsl(150, 60%, 45%)`, Purple `hsl(270, 60%, 55%)`, Teal `hsl(180, 60%, 45%)`, Pink `hsl(320, 60%, 55%)`, Indigo `hsl(240, 55%, 55%)`
+- Cycles for index > 5
+- Applied as task box `backgroundColor` with `+ '30'` hex alpha suffix
+
 ### Border Alphas
 
-Only two border alpha values:
-
-- **Active / selected:** 1 (full)
+- **Active / selected:** 1 (full) or 0.7
 - **Inactive / default:** 0.2
+- **Grid lines:** 0.08
+- **Placeholder text:** 0.2 (set via `::placeholder` in `index.css`)
 
 ## Border System
 
-Three tiers, applied consistently by element type:
+Three tiers by element type:
 
 | Tier | Width | Used For |
 |------|-------|----------|
-| **THICK** | 18px | Main input box, modal frame |
-| **MEDIUM** | 9–12px | Calendar day cells (9px default, 12px for highlighted/locked states) |
-| **NORMAL** | 3px | Everything else — checkboxes, buttons, grid lines, edit panel, settings |
+| **THICK** | 12px | Main input box, flash message |
+| **SELECTION** | 6px | Breadcrumbs, selected priority/typetag/recurrence buttons, view toggle (active), colors button (active) |
+| **NORMAL** | 3px | Everything else — checkboxes, task boxes, grid lines, edit panel, buttons, nav arrows |
 
-### Selection Indicator
+### Highlight System (inset box-shadow)
 
-Active/selected state uses 6px border (between NORMAL and MEDIUM) to indicate selection within a group:
-- Priority squares: 6px themed border when selected, 3px transparent when not
-- Category buttons: 6px colored border when selected, 3px when not
-- Recurrence buttons: 6px when active, 3px when not
+Day cells use `inset box-shadow` for state highlights (preserves grid border consistency):
+
+| State | Shadow | Priority |
+|-------|--------|----------|
+| Locked date (clicked) | `inset 0 0 0 12px ... 0.7` | 1 (highest) |
+| Filter match + active | `inset 0 0 0 12px ... 0.7` | 2 |
+| Filter match | `inset 0 0 0 6px ... 0.6` | 3 |
+| Arrow cursor | `inset 0 0 0 6px ... 0.4` | 4 |
+| Selected task in cell | `inset 0 0 0 3px ... 0.4` | 5 |
+| Drag-over | `inset 0 0 0 6px ... 1.0` | overrides all |
+
+### Border Collapse
+
+Adjacent tasks in a day cell share borders: first task has full border, subsequent tasks have `borderTop: 'none'`. Never use negative margins with semi-transparent borders (causes opacity doubling).
+
+## Spacing System
+
+5-tier system (multiples of 3) defined as CSS custom properties in `index.css`:
+
+| Tier | Fixed | Responsive clamp | Use for |
+|------|-------|-------------------|---------|
+| **xs** | `--sp-xs: 3px` | `--sp-xs-r` | Dense task rows, hairline gaps |
+| **sm** | `--sp-sm: 6px` | `--sp-sm-r` | Button padding, standard gaps |
+| **md** | `--sp-md: 12px` | `--sp-md-r` | Input padding, section gaps |
+| **lg** | `--sp-lg: 18px` | `--sp-lg-r` | Container padding |
+| **xl** | `--sp-xl: 24px` | `--sp-xl-r` | Modal padding, major separators |
+
+Sub-tier values (1px, 2px) are OK for dense task row overrides only.
 
 ## Typography
 
 | Context | Font Size | Weight |
 |---------|-----------|--------|
-| Month title | `clamp(22px, 3vw, 36px)` | 900 (black) |
-| Main input | `clamp(22px, 3vw, 36px)` | 900 |
-| Arrow buttons | `clamp(22px, 3vw, 36px)` | 900 |
+| Main input / flash message | `clamp(22px, 3vw, 36px)` | 900 (black) |
+| Nav arrows | `clamp(22px, 3vw, 36px)` | 900 |
+| Nav title / breadcrumbs / view toggle | `clamp(13px, 1.8vw, 20px)` | 900 |
 | Day watermark numbers | `clamp(48px, 8vw, 120px)` | 900 |
-| TODAY watermark | `clamp(28px, 5vw, 72px)` | 900 |
+| TODAY watermark | `clamp(24px, 4vw, 64px)` | 900 |
 | Edit panel controls | `clamp(11px, 1.3vw, 14px)` | 700–900 |
-| Calendar task text | Scales with density (3 tiers) | 900 |
-| Color picker labels | `clamp(13px, 1.8vw, 20px)` | 900 |
+| Day headers (sun–sat) | `clamp(13px, 1.8vw, 20px)` | 700 |
+| Calendar task text (<=3 tasks) | `clamp(13px, 1.8vw, 18px)` | 400 |
+| Calendar task text (4–5 tasks) | `clamp(11px, 1.4vw, 15px)` | 400 |
+| Calendar task text (6+ tasks) | `clamp(9px, 1.1vw, 12px)` | 400 |
 
-All text is `font-mono`. Weight is always **bold** (700) or **black** (900). No regular/light weights.
+All text is `font-mono`. No regular/light weights except task text at rest (400).
+
+## Task Box Model
+
+Each task in a day cell renders as `[checkbox][task box]`:
+
+```
+┌──────┬──────────────────────┐
+│      │  task text            │
+│  []  │  (truncated)          │
+│      │                       │
+└──────┴──────────────────────┘
+```
+
+- **Checkbox**: square (`width: sqSize, height: sqSize`), `backgroundColor` = priority color, `border: 3px`, X SVG when completed. Click toggles completion + plays sound.
+- **Task box**: `flex-1`, `height: sqSize`, `borderLeft: 'none'` (shares border with checkbox), `backgroundColor` = typetag color at low alpha. Click opens TaskEditPanel.
+- **Border collapse**: subsequent tasks omit `borderTop` on both checkbox and task box.
+- **Checkbox sizes scale with density**: <=3 tasks: `clamp(18px, 2.5vw, 28px)`, 4-5: `clamp(14px, 2vw, 22px)`, 6+: `clamp(10px, 1.4vw, 16px)`.
 
 ## Component Terminology
 
 ### Layout Regions
 
-- **Input Bar** — The persistent top bar with the multi-step task creation wizard (date > name > priority). Contains the main input, breadcrumb trail, nav controls, and colors button.
-- **Month Grid** — The 7-column calendar grid showing day cells.
-- **Edit Panel** — The inline panel that appears below the input bar when a task is clicked for editing. Shows name input, priority squares, categories, and recurrence controls.
-- **Color Picker** — The inline 4-column strip (SL square, text hue, bg hue, SL square) that appears when the colors button is toggled.
-- **Settings Panel** — The slide-out right panel with theme presets, categories, and preferences.
+- **Input Bar** (`TaskInputBar.tsx`) — Top bar with multi-step task wizard (date > name > priority), nav arrows, today button, view toggle, colors button.
+- **Month Grid** (`MonthView.tsx`) — 7-column calendar grid. Today's row gets `2fr` height.
+- **Week Grid** (`WeekView.tsx`) — 7-column day-by-day vertical list.
+- **Edit Panel** (`TaskEditPanel.tsx`) — Inline panel below input bar: `[priority] [name input] [typetags] [+] [repeat] [freq] [days] [delete]`.
+- **Color Picker** (`ColorPicker.tsx`) — Inline 4-column strip: `[text SL] [text hue] [bg hue] [bg SL]`.
 
 ### Interactive Elements
 
-- **Day Cell** — A single cell in the month grid. Contains a watermark number (or "TODAY"), task squares, and task text.
-- **Task Square** — The small colored square next to each task in a day cell. Color = priority. Click to complete (triggers boom animation + sound).
-- **Breadcrumb** — The bordered boxes in the input bar showing the current wizard step values (date, name, priority).
-- **Priority Square** — The colored selection squares in the edit panel (gray/yellow/red).
-- **Category Tag** — A bordered label showing a task's category, colored to match.
+- **Day Cell** (`MonthDayCell.tsx`) — Single cell in month grid. Watermark number (or "TODAY" at 0.2 opacity), task checkboxes and task boxes.
+- **Checkbox** — Priority-colored square. Click toggles completion (plays sound). X SVG when done.
+- **Task Box** — Rectangle right of checkbox with task text. Click opens edit panel. Selection indicated by daycell outline, not text styling.
+- **Breadcrumb** — 6px bordered boxes in input bar showing locked date ("FRI 27") and locked task name.
 
-### Animations & Feedback
+### Feedback
 
-- **Boom** — When a task square is clicked to complete: square shrinks to zero, encouraging message appears, completion sound plays.
-- **Crossout Sweep** — CSS `::after` line that draws left-to-right through completed task text (300ms).
-- **Check Draw** — SVG checkmark stroke animation on checkbox completion (200ms).
+- **Flash message** — On task completion, input bar temporarily shows random success message (1.5s) with 12px full-opacity border.
+- **Completion sound** — Cycles through 8 Web Audio tones.
 
 ### Task Input Wizard Steps
 
-1. **Date step** — Type to fuzzy-filter calendar dates. Matching cells highlight in the month grid. Arrow keys cycle the highlight. Enter confirms.
-2. **Name step** — Type the task name. Enter confirms.
-3. **Priority step** — Type 0/1/2 or use arrow keys. Enter confirms and creates the task.
+1. **Date step** — Type to fuzzy-filter dates (full names, shorthand like "tu2", aliases "today"/"tom"). Tab cycles through days. Enter confirms.
+2. **Name step** — Type the task name. Backspace when empty returns to date step. Enter confirms.
+3. **Priority step** — Type none/yellow/red or Tab to cycle. Enter confirms and creates the task.
 
-### Sound System
+### Keyboard Navigation
 
-- **Completion sound** — Cycles through 8 different Web Audio tones (dings, arps, chords). Different sound per completion.
-- **Snap** — Bandpass-filtered noise burst for UI feedback.
+- **Arrow keys** — Move cursor between day cells (null by default, appears on first press at today). Auto-navigates months at boundaries.
+- **Enter** — On cursor: locks day (same as click). In input: advances wizard step.
+- **Escape** — Unwinds: colors picker > settings > edit panel > snap view to today + hide cursor.
+- **Tab** — Always cycles through dates (even when input unfocused). Shift+Tab goes backward.
 
 ## Responsive Behavior
 
-- **Desktop:** 7-column month grid fills the viewport below the input bar.
-- **Mobile:** Horizontal scroll with snap points. Safe area insets respected.
-- All sizing uses `clamp()` for fluid scaling between breakpoints.
+- **Desktop:** 7-column month grid fills viewport below input bar.
+- All sizing uses `clamp()` for fluid scaling.
 
 ## File Naming
 
