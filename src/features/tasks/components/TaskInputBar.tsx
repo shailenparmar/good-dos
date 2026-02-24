@@ -90,8 +90,10 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
 
   const onPrevRef = useRef(onPrev)
   const onNextRef = useRef(onNext)
+  const lockedDateRef = useRef(lockedDate)
   useEffect(() => { stepRef.current = step }, [step])
   useEffect(() => { isActiveRef.current = isActive }, [isActive])
+  useEffect(() => { lockedDateRef.current = lockedDate }, [lockedDate])
   // allDateOptionsRef updated synchronously above (not via effect) to avoid stale reads
   useEffect(() => { onPrevRef.current = onPrev }, [onPrev])
   useEffect(() => { onNextRef.current = onNext }, [onNext])
@@ -111,8 +113,9 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
         if ((e.target as HTMLElement)?.closest?.('[data-edit-panel]')) return
         e.preventDefault()
 
-        // If not in date step, reset to date step — stay on current month
+        // If not in date step, reset to date step — resume from locked date
         if (stepRef.current !== 'date') {
+          const prevDate = lockedDateRef.current
           setStep('date')
           setInputValue('')
           setHighlightIndex(0)
@@ -120,7 +123,14 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
           setLockedDateLabel(null)
           setLockedName(null)
           setIsActive(true)
-          setTabbedDateIndex(null)
+          // Find the locked date in options so next Tab advances from there
+          const opts = allDateOptionsRef.current
+          if (prevDate) {
+            const idx = opts.findIndex(o => o.value === prevDate)
+            setTabbedDateIndex(idx >= 0 ? idx : null)
+          } else {
+            setTabbedDateIndex(null)
+          }
           inputRef.current?.focus()
           return
         }
