@@ -144,6 +144,35 @@ Both views receive and forward: `onToggle`, `onCyclePriority`, `onTaskClick`, `o
 - **Three border widths:** THICK (18px) for main input/modals, MEDIUM (9-12px) for calendar cells, NORMAL (3px) for everything else.
 - **Selection indicator:** 6px border for selected items within a group (priority, category, recurrence).
 - **Font weight:** Always bold (700) or black (900). Never regular.
+- **Placeholder text:** Styled via `::placeholder` in `index.css` — theme color at 0.2 alpha (not browser default gray).
+
+## Spacing System
+
+5-tier system (multiples of 3) defined as CSS custom properties in `index.css`:
+
+| Tier | Fixed | Responsive clamp | Use for |
+|------|-------|-------------------|---------|
+| **xs** | `--sp-xs: 3px` | `--sp-xs-r: clamp(2px, 0.4vw, 4px)` | Dense task rows, hairline gaps |
+| **sm** | `--sp-sm: 6px` | `--sp-sm-r: clamp(4px, 0.8vw, 8px)` | Button padding, standard gaps |
+| **md** | `--sp-md: 12px` | `--sp-md-r: clamp(6px, 1vw, 12px)` | Input padding, section gaps |
+| **lg** | `--sp-lg: 18px` | `--sp-lg-r: clamp(8px, 1.2vw, 18px)` | Container padding |
+| **xl** | `--sp-xl: 24px` | `--sp-xl-r: clamp(12px, 2vw, 24px)` | Modal padding, major separators |
+
+Use `var(--sp-sm)` for fixed, `var(--sp-sm-r)` for responsive. Sub-tier values (1px, 2px) are OK for dense task row overrides.
+
+## TaskEditPanel
+
+Single-row layout: `[priority none|med|high] [name input] [typetags...] [+] [repeat] [freq options] [day toggles] [delete]`
+
+- **Delete button**: far right via `ml-auto`, uses `onMouseDown` + `stopPropagation` (not `onClick`) to avoid conflict with click-outside handler. Styled same as other buttons (theme color, 0.2 border), NOT red.
+- **Delete cascade**: for recurring tasks, deletes that instance + all future instances in the same series.
+- All interactive elements in the panel use `onMouseDown` for reliability (the panel has a document-level `mousedown` click-outside listener).
+
+## Date Input (Typer)
+
+- Placeholder: `"type a day"` (date step), `"task..."` (name step), `"none / yellow / red"` (priority step)
+- Supports fuzzy matching: `"tue"` → all Tuesdays, `"18"` → day 18, `"tu25"` → Tue 25, `"today"` / `"tom"` → today/tomorrow
+- Tab cycles through days; Enter selects the highlighted/filtered date
 
 ## Data Models
 
@@ -193,8 +222,8 @@ Dexie v2 schema in `src/shared/storage/db.ts`:
 
 | Hook | Purpose |
 |------|---------|
-| `useTasks` | CRUD operations, queries (by date, unscheduled, subtasks) |
-| `useRecurring` | Watches completed recurring tasks, auto-creates next instance |
+| `useTasks` | CRUD operations, queries (by date, unscheduled, subtasks). `deleteTask` cascade-deletes all future instances in a recurring series. |
+| `useRecurring` | Pre-populates recurring tasks up to 60 days ahead. Groups by series (text + parentId), finds latest date, generates forward via `getNextOccurrence`. |
 | `useAutoCleanup` | 2s interval deleting blank tasks >3s old |
 | `useTaskSound` | Completion sound playback (8 cycling tones) |
 
@@ -203,6 +232,17 @@ Dexie v2 schema in `src/shared/storage/db.ts`:
 6 HSL CSS variables: `--h`, `--s`, `--l` (text), `--bh`, `--bs`, `--bl` (background).
 Pre-React IIFE in `index.html` reads localStorage and sets vars before paint (no flash).
 
+**Defaults:** Black text `hsl(0, 0%, 0%)` on saturated light green `hsl(120, 100%, 75%)`.
+Defaults live in three places (must stay in sync):
+- `index.html` — flash-prevention IIFE fallback values
+- `ThemeContext.tsx` — `useState` default values
+- `ThemeContext.tsx` — first entry in `DEFAULT_PRESETS`
+
 ## Version
 
 Stored in `src/shared/version.ts` as `APP_VERSION`. Currently `0.1.0`.
+
+## Important Implementation Notes
+
+- **`toDateString()`** in `date.ts` uses local time formatting (getFullYear/getMonth/getDate), NOT `toISOString()` (UTC). This prevents timezone-related date shifts.
+- **Event handlers on interactive elements inside panels with click-outside listeners** must use `onMouseDown` + `e.stopPropagation()`, not `onClick`. The click-outside handler fires on `mousedown` at the document level and can unmount the panel before `click` fires.

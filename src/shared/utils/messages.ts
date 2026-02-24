@@ -1,6 +1,6 @@
 const MESSAGES = [
   'boom',
-  'one less thing',
+  'one fewer thing',
   'clean',
   'check',
   'smooth',
