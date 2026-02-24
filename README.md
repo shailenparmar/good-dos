@@ -1,6 +1,6 @@
 # good weeks
 
-Local-first calendar-based task manager. No server, no accounts — everything lives in the browser via IndexedDB and localStorage.
+type-first calendar interface 
 
 ## Stack
 
