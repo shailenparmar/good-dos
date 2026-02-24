@@ -56,6 +56,7 @@ export function TaskEditPanel({ task, typetags, onUpdate, onDelete, onRemoveRecu
       const idx = focusable.indexOf(document.activeElement as HTMLElement)
       if (idx === -1) return
       e.preventDefault()
+      e.stopPropagation()
       const next = e.shiftKey
         ? (idx <= 0 ? focusable.length - 1 : idx - 1)
         : (idx >= focusable.length - 1 ? 0 : idx + 1)
@@ -140,6 +141,7 @@ export function TaskEditPanel({ task, typetags, onUpdate, onDelete, onRemoveRecu
   return (
     <div
       ref={panelRef}
+      data-edit-panel
       className="flex-shrink-0 flex flex-col"
       style={{
         gap: 'var(--sp-xs)',
@@ -245,7 +247,7 @@ export function TaskEditPanel({ task, typetags, onUpdate, onDelete, onRemoveRecu
         ) : (
           <button
             onClick={() => setAddingTag(true)}
-            className="font-mono font-black active:scale-90"
+            className="font-mono font-black active:scale-90 uppercase whitespace-nowrap"
             style={{
               color: 'hsl(var(--h), var(--s), var(--l))',
               border: '3px solid hsla(var(--h), var(--s), var(--l), 0.2)',
@@ -253,7 +255,7 @@ export function TaskEditPanel({ task, typetags, onUpdate, onDelete, onRemoveRecu
               fontSize: FONT,
             }}
           >
-            +
+            + tag
           </button>
         )}
 

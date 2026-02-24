@@ -32,7 +32,6 @@ function getPriorityColor(priority: number): string {
 
 export function MonthDayCell({ date, dateStr, tasks, isToday, isCurrentMonth, filterMatch = 'none', isActiveHighlight, isLockedDate, onClick, onToggle, onTaskClick, onPlaySound, onMoveTask, categoryColorMap, selectedTaskId, isCursor }: MonthDayCellProps) {
   const [isDragOver, setIsDragOver] = useState(false)
-  const [hoveredTaskId, setHoveredTaskId] = useState<string | null>(null)
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -74,6 +73,7 @@ export function MonthDayCell({ date, dateStr, tasks, isToday, isCurrentMonth, fi
   const cellOpacity = isCurrentMonth ? 1 : 0.12
 
   // ── Highlight — inset box-shadow so grid borders stay consistent ──
+  const hasSelectedTask = selectedTaskId ? allTasks.some(t => t.id === selectedTaskId) : false
   let highlightShadow = 'none'
   if (isLockedDate) {
     highlightShadow = 'inset 0 0 0 12px hsla(var(--h), var(--s), var(--l), 0.7)'
@@ -83,8 +83,8 @@ export function MonthDayCell({ date, dateStr, tasks, isToday, isCurrentMonth, fi
     highlightShadow = 'inset 0 0 0 6px hsla(var(--h), var(--s), var(--l), 0.6)'
   } else if (isCursor) {
     highlightShadow = 'inset 0 0 0 6px hsla(var(--h), var(--s), var(--l), 0.4)'
-  } else if (isToday) {
-    highlightShadow = 'inset 0 0 0 3px hsla(var(--h), var(--s), var(--l), 0.2)'
+  } else if (hasSelectedTask) {
+    highlightShadow = 'inset 0 0 0 3px hsla(var(--h), var(--s), var(--l), 0.4)'
   }
 
   const handleSmack = (task: Task, e: React.MouseEvent) => {
@@ -142,25 +142,21 @@ export function MonthDayCell({ date, dateStr, tasks, isToday, isCurrentMonth, fi
         const totalRows = allTasks.length
         const sqSize = totalRows <= 3 ? 'clamp(18px, 2.5vw, 28px)' : totalRows <= 5 ? 'clamp(14px, 2vw, 22px)' : 'clamp(10px, 1.4vw, 16px)'
         const txtSize = totalRows <= 3 ? 'clamp(13px, 1.8vw, 18px)' : totalRows <= 5 ? 'clamp(11px, 1.4vw, 15px)' : 'clamp(9px, 1.1vw, 12px)'
-        const gap = totalRows <= 3 ? 'var(--sp-xs)' : '1px'
         const pad = totalRows <= 3 ? 'var(--sp-xs) var(--sp-sm)' : '2px 4px'
+        const border = '3px solid hsla(var(--h), var(--s), var(--l), 0.2)'
 
         return (
           <div
             className="relative z-10 h-full flex flex-col overflow-hidden"
-            style={{ gap, padding: 'var(--sp-xs)' }}
+            style={{ padding: 'var(--sp-xs)' }}
           >
-            {allTasks.map(task => {
+            {allTasks.map((task, idx) => {
               const catColor = task.categoryId ? categoryColorMap?.[task.categoryId] : undefined
-              const borderColor = catColor ?? 'hsla(var(--h), var(--s), var(--l), 0.2)'
-
-              const isBold = hoveredTaskId === task.id || selectedTaskId === task.id
-
               return (
                 <div
                   key={task.id}
                   className="flex items-stretch min-w-0"
-                  style={{ gap: '0px' }}
+                  style={{ marginTop: idx > 0 ? '-3px' : undefined }}
                   draggable
                   onDragStart={e => handleDragStart(e, task.id)}
                 >
@@ -168,9 +164,10 @@ export function MonthDayCell({ date, dateStr, tasks, isToday, isCurrentMonth, fi
                   <div
                     className="relative flex-shrink-0"
                     style={{
+                      width: sqSize,
                       aspectRatio: '1',
                       backgroundColor: getPriorityColor(task.priority),
-                      border: `3px solid ${borderColor}`,
+                      border,
                     }}
                     onClick={e => e.stopPropagation()}
                     onMouseDown={e => {
@@ -186,12 +183,13 @@ export function MonthDayCell({ date, dateStr, tasks, isToday, isCurrentMonth, fi
                       </svg>
                     )}
                   </div>
-                  {/* Task box */}
+                  {/* Task box — tag color as fill */}
                   <div
                     className="flex-1 min-w-0 flex items-center"
                     style={{
-                      border: `3px solid ${borderColor}`,
+                      border,
                       borderLeft: 'none',
+                      backgroundColor: catColor ? catColor + '30' : undefined,
                       padding: pad,
                     }}
                     onClick={e => e.stopPropagation()}
@@ -199,8 +197,6 @@ export function MonthDayCell({ date, dateStr, tasks, isToday, isCurrentMonth, fi
                       e.stopPropagation()
                       onTaskClick(task)
                     }}
-                    onMouseEnter={() => setHoveredTaskId(task.id)}
-                    onMouseLeave={() => setHoveredTaskId(null)}
                   >
                     <span
                       className="block w-full text-left truncate font-mono"
@@ -208,7 +204,6 @@ export function MonthDayCell({ date, dateStr, tasks, isToday, isCurrentMonth, fi
                         color: 'hsl(var(--h), var(--s), var(--l))',
                         fontSize: txtSize,
                         lineHeight: '1.2',
-                        fontWeight: isBold ? 700 : 400,
                       }}
                     >
                       {task.text || 'untitled'}

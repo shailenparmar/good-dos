@@ -95,6 +95,7 @@ When the user says **this**, they mean **that** in code:
 | **watermark** | The large faded day number (or "TODAY") behind tasks in each cell | The `absolute inset-0` div in `MonthDayCell` with opacity 0.2 |
 | **highlight** | The inset box-shadow on a cell when it matches input filtering | `highlightShadow` in `MonthDayCell` |
 | **locked date** | The date that's been selected in the input bar, shown with thick highlight | `isLockedDate` / `lockedDate` state |
+| **selector** | The highlight square that appears when pressing Tab to cycle through daycells | `tabbedDateIndex` in `TaskInputBar`, rendered as highlight on the active daycell |
 
 ## View Parity Contract (MonthView ↔ WeekView)
 

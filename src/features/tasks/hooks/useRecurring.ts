@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { db } from '@shared/storage/db'
 import type { Task } from '../types'
 import { getNextOccurrence, toDateString } from '@shared/utils/date'
@@ -11,7 +11,10 @@ function generateId(): string {
 const HORIZON_DAYS = 60
 
 export function useRecurring(tasks: Task[]) {
+  const generating = useRef(false)
+
   useEffect(() => {
+    if (generating.current) return
     const horizon = new Date()
     horizon.setHours(0, 0, 0, 0)
     horizon.setDate(horizon.getDate() + HORIZON_DAYS)
@@ -61,7 +64,6 @@ export function useRecurring(tasks: Task[]) {
             categoryId: original.categoryId,
             dueDate: dateStr,
             parentId: original.id,
-            recurrence,
             sortOrder: original.sortOrder,
             createdAt: now,
             updatedAt: now,
@@ -73,7 +75,10 @@ export function useRecurring(tasks: Task[]) {
     }
 
     if (toAdd.length > 0) {
-      db.tasks.bulkAdd(toAdd.map(t => ({ ...t, id: generateId() })))
+      generating.current = true
+      db.tasks.bulkAdd(toAdd.map(t => ({ ...t, id: generateId() }))).finally(() => {
+        generating.current = false
+      })
     }
   }, [tasks])
 }

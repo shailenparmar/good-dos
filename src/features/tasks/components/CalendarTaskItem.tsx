@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import type { Task } from '../types'
 
 interface CalendarTaskItemProps {
@@ -21,10 +20,8 @@ function getPriorityColor(priority: number): string {
   }
 }
 
-export function CalendarTaskItem({ task, onToggle, onCyclePriority: _onCyclePriority, onClick, onPlaySound, categoryColor, isSelected, draggable: isDraggable, onDragStart }: CalendarTaskItemProps) {
-  const [hovered, setHovered] = useState(false)
-  const borderColor = categoryColor ?? 'hsla(var(--h), var(--s), var(--l), 0.2)'
-  const isBold = hovered || isSelected
+export function CalendarTaskItem({ task, onToggle, onCyclePriority: _onCyclePriority, onClick, onPlaySound, categoryColor, draggable: isDraggable, onDragStart }: CalendarTaskItemProps) {
+  const border = '3px solid hsla(var(--h), var(--s), var(--l), 0.2)'
 
   return (
     <div
@@ -40,7 +37,7 @@ export function CalendarTaskItem({ task, onToggle, onCyclePriority: _onCyclePrio
           width: 'clamp(18px, 2.5vw, 28px)',
           aspectRatio: '1',
           backgroundColor: getPriorityColor(task.priority),
-          border: `3px solid ${borderColor}`,
+          border,
         }}
         onMouseDown={(e) => {
           e.stopPropagation()
@@ -56,20 +53,19 @@ export function CalendarTaskItem({ task, onToggle, onCyclePriority: _onCyclePrio
         )}
       </div>
 
-      {/* Task text box */}
+      {/* Task text box — tag color as fill */}
       <div
         className="flex-1 min-w-0 flex items-center"
         style={{
-          border: `3px solid ${borderColor}`,
+          border,
           borderLeft: 'none',
+          backgroundColor: categoryColor ? categoryColor + '30' : undefined,
           padding: 'var(--sp-xs) var(--sp-sm)',
         }}
         onMouseDown={(e) => {
           e.stopPropagation()
           onClick(task)
         }}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
       >
         <span
           className="block w-full text-left truncate font-mono"
@@ -77,7 +73,7 @@ export function CalendarTaskItem({ task, onToggle, onCyclePriority: _onCyclePrio
             color: 'hsl(var(--h), var(--s), var(--l))',
             fontSize: 'clamp(11px, 1.3vw, 14px)',
             lineHeight: '1.2',
-            fontWeight: isBold ? 700 : 400,
+            fontWeight: 400,
           }}
         >
           {task.text || 'untitled'}

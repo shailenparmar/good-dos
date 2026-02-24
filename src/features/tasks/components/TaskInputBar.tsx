@@ -106,11 +106,12 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
   // Type anywhere to auto-focus input; intercept Tab globally for date cycling
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      // Tab — ALWAYS intercept for day cycling, regardless of step or focus
+      // Tab — intercept for day cycling, but not when focus is inside the edit panel
       if (e.key === 'Tab') {
+        if ((e.target as HTMLElement)?.closest?.('[data-edit-panel]')) return
         e.preventDefault()
 
-        // If not in date step, reset to date step and snap to today — don't cycle yet
+        // If not in date step, reset to date step — stay on current month
         if (stepRef.current !== 'date') {
           setStep('date')
           setInputValue('')
@@ -120,7 +121,6 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
           setLockedName(null)
           setIsActive(true)
           setTabbedDateIndex(null)
-          onTodayRef.current?.()
           inputRef.current?.focus()
           return
         }
@@ -131,13 +131,14 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
         if (opts.length === 0) return
 
         setTabbedDateIndex(prev => {
-          // No selection → today if visible, otherwise first of the month
           if (prev === null) {
-            const todayStr = new Date().toISOString().slice(0, 10)
+            // No day selected:
+            // Today's month → select today; other month → first of month (index 0)
+            const todayStr = toDateString(new Date())
             const todayIdx = opts.findIndex(o => o.value === todayStr)
             return todayIdx >= 0 ? todayIdx : 0
           }
-          // Cycle to next/prev consecutive day
+          // Day selected → go to next/prev day
           const next = prev + (backward ? -1 : 1)
           if (next >= opts.length) {
             onNextRef.current?.()

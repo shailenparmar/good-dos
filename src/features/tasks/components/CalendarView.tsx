@@ -192,6 +192,8 @@ export function CalendarView({ settingsOpen, onCloseSettings }: CalendarViewProp
     if (priority !== 0) {
       await updateTask(id, { priority })
     }
+    // Auto-open edit panel for the new task
+    setSelectedTask({ id } as Task)
   }, [addTask, updateTask])
 
   const handleClearPrefill = useCallback(() => {
