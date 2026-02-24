@@ -103,8 +103,9 @@ Any change to one view MUST be mirrored in the other. The shared rules:
 
 ### Task Rendering
 Both views render tasks as **`[square checkbox][task text box]`**:
-- **Checkbox**: `aspect-ratio: 1`, `flex-shrink-0`, fill = `getPriorityColor(priority)`, border = typetag color or `0.2` default. X SVG inside (strokeWidth 12) when completed.
-- **Task text box**: `flex-1 min-w-0`, border = same as checkbox, `borderLeft: none`. Font mono, weight 400 (700 on hover/selected).
+- **Checkbox**: `aspect-ratio: 1`, `flex-shrink-0`, fill = `getPriorityColor(priority)`, border = `0.2` default. X SVG inside (strokeWidth 12, inset 15→85) when completed.
+- **Task text box**: `flex-1 min-w-0`, border = `0.2` default, `borderLeft: none`. Typetag color shown as **background fill** (`catColor + '30'`). Font mono, weight 400.
+- **Row layout**: Tasks stack with `marginTop: -3px` (overlapping borders) for tight spacing.
 - **Month** renders inline in `MonthDayCell.tsx`. **Week** uses `CalendarTaskItem.tsx` in `DayColumn.tsx`.
 
 ### Click Behavior
@@ -120,7 +121,7 @@ Both views render tasks as **`[square checkbox][task text box]`**:
 | Active highlight | `inset 0 0 0 12px` alpha `0.7` |
 | Filter match | `inset 0 0 0 6px` alpha `0.6` |
 | Cursor (month only) | `inset 0 0 0 6px` alpha `0.4` |
-| Today | `inset 0 0 0 3px` alpha `0.2` |
+| Selected task's daycell | `inset 0 0 0 3px` alpha `0.4` |
 
 ### Date Options for Input Bar
 Both views provide date options sorted **today-first** (closest future dates first, then past). Never start from the leftmost/earliest day of the period.
@@ -163,8 +164,11 @@ Use `var(--sp-sm)` for fixed, `var(--sp-sm-r)` for responsive. Sub-tier values (
 
 ## TaskEditPanel
 
-Single-row layout: `[priority none|med|high] [name input] [typetags...] [+] [repeat] [freq options] [day toggles] [delete]`
+Single-row layout: `[priority none|med|high] [name input] [typetags...] [+ tag] [repeat] [freq options] [day toggles] [delete]`
 
+- **Auto-opens** after creating a new task (CalendarView sets `selectedTask` on create).
+- **`data-edit-panel` attribute** on root div — used by TaskInputBar to skip Tab interception when focus is inside the panel.
+- **Tab trapping**: Tab cycles focus within the panel; `e.stopPropagation()` prevents global Tab handler from intercepting.
 - **Delete button**: far right via `ml-auto`, uses `onMouseDown` + `stopPropagation` (not `onClick`) to avoid conflict with click-outside handler. Styled same as other buttons (theme color, 0.2 border), NOT red.
 - **Delete cascade**: for recurring tasks, deletes that instance + all future instances in the same series.
 - All interactive elements in the panel use `onMouseDown` for reliability (the panel has a document-level `mousedown` click-outside listener).
@@ -224,7 +228,7 @@ Dexie v2 schema in `src/shared/storage/db.ts`:
 | Hook | Purpose |
 |------|---------|
 | `useTasks` | CRUD operations, queries (by date, unscheduled, subtasks). `deleteTask` cascade-deletes all future instances in a recurring series. |
-| `useRecurring` | Pre-populates recurring tasks up to 60 days ahead. Groups by series (text + parentId), finds latest date, generates forward via `getNextOccurrence`. |
+| `useRecurring` | Pre-populates recurring tasks up to 60 days ahead. Parent→child model: originals have `recurrence` + `parentId === ''`, children have `parentId` pointing to original (no `recurrence` on children). Re-entrancy guard via `generating` ref. |
 | `useAutoCleanup` | 2s interval deleting blank tasks >3s old |
 | `useTaskSound` | Completion sound playback (8 cycling tones) |
 
