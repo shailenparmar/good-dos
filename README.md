@@ -10,15 +10,6 @@ type-first calendar interface
 - PWA via vite-plugin-pwa
 - Web Audio API for completion sounds
 
-## Run
-
-```
-npm install
-npm run dev
-```
-
-Opens at http://localhost:5173/
-
 ## Architecture
 
 ```
@@ -35,6 +26,3 @@ src/
 ├── main.tsx
 └── index.css
 ```
-
-See [docs/STYLE_GUIDE.md](docs/STYLE_GUIDE.md) for visual design rules and terminology.
-See [CLAUDE.md](CLAUDE.md) for AI assistant context.
