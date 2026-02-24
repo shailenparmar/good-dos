@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta id="theme-color-meta" name="theme-color" content="#000000" />
+    <title>good weeks</title>
+    <script>
+      // Theme flash prevention — read localStorage and set CSS vars before React
+      (function() {
+        var el = document.documentElement;
+        function lsGet(k) {
+          try { var v = localStorage.getItem(k); return v !== null ? Number(v) : null; }
+          catch(e) { return null; }
+        }
+        function hslToHex(h, s, l) {
+          s /= 100; l /= 100;
+          var a = s * Math.min(l, 1 - l);
+          function f(n) {
+            var k = (n + h / 30) % 12;
+            var c = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+            return Math.round(255 * c).toString(16).padStart(2, '0');
+          }
+          return '#' + f(0) + f(8) + f(4);
+        }
+        var th = lsGet('colorHue') ?? 0;
+        var ts = lsGet('colorSaturation') ?? 0;
+        var tl = lsGet('colorLightness') ?? 95;
+        var bh = lsGet('bgHue') ?? 0;
+        var bs = lsGet('bgSaturation') ?? 0;
+        var bl = lsGet('bgLightness') ?? 8;
+        el.style.setProperty('--h', th);
+        el.style.setProperty('--s', ts + '%');
+        el.style.setProperty('--l', tl + '%');
+        el.style.setProperty('--bh', bh);
+        el.style.setProperty('--bs', bs + '%');
+        el.style.setProperty('--bl', bl + '%');
+        var hex = hslToHex(bh, bs, bl);
+        document.getElementById('theme-color-meta').setAttribute('content', hex);
+        document.write('<style>html,body{background-color:' + hex + '!important;}</style>');
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

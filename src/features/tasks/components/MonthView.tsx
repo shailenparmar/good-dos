@@ -1,0 +1,134 @@
+import { useMemo, useEffect } from 'react'
+import type { Task } from '../types'
+import { MonthDayCell } from './MonthDayCell'
+import { getMonthGrid, toDateString, isSameDay } from '@shared/utils/date'
+
+const DAY_HEADERS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
+
+interface MonthViewProps {
+  year: number
+  month: number
+  getTasksForDate: (dateStr: string) => Task[]
+  onToggle: (id: string) => void
+  onCyclePriority: (id: string) => void
+  onTaskClick: (task: Task) => void
+  onDayClick: (dateStr: string) => void
+  onPlaySound: (isSubtask: boolean) => void
+  highlightedDates?: Set<string>
+  activeHighlight?: string | null
+  lockedDate?: string | null
+  onPrev?: () => void
+  onNext?: () => void
+}
+
+export function MonthView({ year, month, getTasksForDate, onToggle, onCyclePriority, onTaskClick, onDayClick, onPlaySound, highlightedDates, activeHighlight, lockedDate, onPrev, onNext }: MonthViewProps) {
+  const grid = getMonthGrid(year, month)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  // Trim trailing empty weeks
+  const trimmedGrid = useMemo(() => {
+    let lastNonEmpty = grid.length - 1
+    while (lastNonEmpty >= 0 && grid[lastNonEmpty].every(d => d === null)) {
+      lastNonEmpty--
+    }
+    return grid.slice(0, lastNonEmpty + 1)
+  }, [grid])
+
+  const hasHighlights = highlightedDates && highlightedDates.size > 0
+
+  // Global arrow keys for month navigation (when input not focused)
+  useEffect(() => {
+    if (!onPrev || !onNext) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const el = document.activeElement
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) return
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault()
+        onPrev()
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault()
+        onNext()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [onPrev, onNext])
+
+  return (
+    <div className="flex-1 min-h-0 flex flex-col px-1 pb-1 relative">
+      {/* Day headers */}
+      <div className="grid grid-cols-7 gap-0 flex-shrink-0">
+        {DAY_HEADERS.map(d => (
+          <div
+            key={d}
+            className="text-center font-mono font-black py-1.5 uppercase"
+            style={{
+              color: 'hsla(var(--h), var(--s), var(--l), 0.7)',
+              fontSize: 'clamp(13px, 1.8vw, 20px)',
+            }}
+          >
+            {d}
+          </div>
+        ))}
+      </div>
+
+      {/* Grid — fills all remaining space */}
+      <div
+        className="grid grid-cols-7 flex-1 min-h-0"
+        style={{
+          gridTemplateRows: `repeat(${trimmedGrid.length}, 1fr)`,
+          border: '3px solid hsla(var(--h), var(--s), var(--l), 0.1)',
+          gap: 0,
+        }}
+      >
+        {trimmedGrid.map((week, wi) =>
+          week.map((date, di) => {
+            if (!date) {
+              return (
+                <div
+                  key={`${wi}-${di}`}
+                  style={{
+                    backgroundColor: 'hsla(var(--h), var(--s), var(--l), 0.02)',
+                    borderRight: '3px solid hsla(var(--h), var(--s), var(--l), 0.08)',
+                    borderBottom: '3px solid hsla(var(--h), var(--s), var(--l), 0.08)',
+                  }}
+                />
+              )
+            }
+            const dateStr = toDateString(date)
+            const isToday = isSameDay(date, today)
+            const isCurrentMonth = date.getMonth() === month
+            const tasks = getTasksForDate(dateStr)
+
+            let filterMatch: 'none' | 'match' | 'dimmed' = 'none'
+            if (hasHighlights) {
+              filterMatch = highlightedDates!.has(dateStr) ? 'match' : 'dimmed'
+            }
+
+            return (
+              <MonthDayCell
+                key={dateStr}
+                date={date}
+                dateStr={dateStr}
+                tasks={tasks}
+                isToday={isToday}
+                isCurrentMonth={isCurrentMonth}
+                filterMatch={filterMatch}
+                isActiveHighlight={activeHighlight === dateStr}
+                isLockedDate={lockedDate === dateStr}
+                hasLockedDate={lockedDate !== null && lockedDate !== undefined}
+                onClick={onDayClick}
+                onToggle={onToggle}
+                onCyclePriority={onCyclePriority}
+                onTaskClick={onTaskClick}
+                onPlaySound={onPlaySound}
+              />
+            )
+          })
+        )}
+      </div>
+
+    </div>
+  )
+}
