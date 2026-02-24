@@ -6,10 +6,11 @@ const MESSAGES = [
   'smooth',
   'nailed it',
   'yes',
-  'crushed it',
-  'nice work',
+  'slay',
+  'nice',
   'solid',
   'progress',
+  'swag',
 ]
 
 export function getRandomMessage(): string {

@@ -11,20 +11,7 @@ export function useTasks() {
 
   const topLevelTasks = tasks
     .filter(t => t.parentId === '')
-    .sort((a, b) => {
-      // incomplete first
-      if (a.completed !== b.completed) return a.completed ? 1 : -1
-      // priority desc
-      if (a.priority !== b.priority) return b.priority - a.priority
-      // due date asc (no date = last)
-      if (a.dueDate !== b.dueDate) {
-        if (!a.dueDate) return 1
-        if (!b.dueDate) return -1
-        return a.dueDate.localeCompare(b.dueDate)
-      }
-      // created asc
-      return a.createdAt - b.createdAt
-    })
+    .sort((a, b) => a.sortOrder - b.sortOrder)
 
   const getSubtasks = (parentId: string): Task[] =>
     tasks
@@ -34,20 +21,12 @@ export function useTasks() {
   const getTasksForDate = (dateStr: string): Task[] =>
     tasks
       .filter(t => t.parentId === '' && t.dueDate === dateStr)
-      .sort((a, b) => {
-        if (a.completed !== b.completed) return a.completed ? 1 : -1
-        if (a.priority !== b.priority) return b.priority - a.priority
-        return a.sortOrder - b.sortOrder
-      })
+      .sort((a, b) => a.sortOrder - b.sortOrder)
 
   const getUnscheduledTasks = (): Task[] =>
     tasks
       .filter(t => t.parentId === '' && !t.dueDate)
-      .sort((a, b) => {
-        if (a.completed !== b.completed) return a.completed ? 1 : -1
-        if (a.priority !== b.priority) return b.priority - a.priority
-        return a.createdAt - b.createdAt
-      })
+      .sort((a, b) => a.createdAt - b.createdAt)
 
   const addTask = async (text: string, parentId: string = '', dueDate?: string): Promise<string> => {
     const id = generateId()
@@ -129,6 +108,13 @@ export function useTasks() {
     })
   }
 
+  const moveTaskToDate = async (id: string, newDate: string) => {
+    const task = tasks.find(t => t.id === id)
+    if (!task) return
+    if (task.dueDate === newDate) return
+    await db.tasks.update(id, { dueDate: newDate, updatedAt: Date.now() })
+  }
+
   return {
     tasks,
     topLevelTasks,
@@ -142,5 +128,6 @@ export function useTasks() {
     cyclePriority,
     indentTask,
     unindentTask,
+    moveTaskToDate,
   }
 }

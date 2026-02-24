@@ -164,7 +164,7 @@ export function ColorPicker({ type, part }: ColorPickerProps) {
             left: needleLeft,
             width: `${needleWidth}px`,
             transform: 'translateX(-50%)',
-            backgroundColor: 'rgba(255, 255, 255, 0.5)',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
           }}
         />
       </div>

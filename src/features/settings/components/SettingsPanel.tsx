@@ -114,7 +114,7 @@ export function SettingsPanel({ isOpen }: SettingsPanelProps) {
               type="color"
               value={newCatColor}
               onChange={e => setNewCatColor(e.target.value)}
-              className="w-8 h-8 cursor-pointer border-none bg-transparent"
+              className="w-8 h-8 border-none bg-transparent"
             />
             <input
               value={newCatName}

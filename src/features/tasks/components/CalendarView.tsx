@@ -6,8 +6,11 @@ import { useRecurring } from '../hooks/useRecurring'
 import { useAutoCleanup } from '../hooks/useAutoCleanup'
 import { useTaskSound } from '../hooks/useTaskSound'
 import type { Task } from '../types'
-import { formatCalendarMonth, getMonthGrid, toDateString, getDateLabel } from '@shared/utils/date'
+import { formatCalendarMonth, getMonthGrid, getWeekDays, toDateString, getDateLabel } from '@shared/utils/date'
+import { getRandomMessage } from '@shared/utils/messages'
+import { lsGetNumber } from '@shared/storage'
 import { MonthView } from './MonthView'
+import { WeekView } from './WeekView'
 import { TaskEditPanel } from './TaskEditPanel'
 import { TaskInputBar } from './TaskInputBar'
 import { ColorPicker } from '@features/theme/components/ColorPicker'
@@ -25,6 +28,7 @@ export function CalendarView({ settingsOpen, onCloseSettings }: CalendarViewProp
     updateTask,
     toggleComplete,
     cyclePriority,
+    moveTaskToDate,
   } = useTasks()
 
   const categories = useLiveQuery(() => db.categories.toArray()) ?? []
@@ -33,6 +37,7 @@ export function CalendarView({ settingsOpen, onCloseSettings }: CalendarViewProp
   useAutoCleanup(tasks, null)
   useRecurring(tasks)
 
+  const [viewMode, setViewMode] = useState<'week' | 'month'>('month')
   const [monthOffset, setMonthOffset] = useState(0)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [prefillDate, setPrefillDate] = useState<string | null>(null)
@@ -41,6 +46,8 @@ export function CalendarView({ settingsOpen, onCloseSettings }: CalendarViewProp
   const [lockedDate, setLockedDate] = useState<string | null>(null)
   const [inputResetKey, setInputResetKey] = useState(0)
   const [colorsOpen, setColorsOpen] = useState(false)
+  const [flashMessage, setFlashMessage] = useState<string | null>(null)
+  const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Refs for ESC handler (avoid stale closures)
   const selectedTaskRef = useRef(selectedTask)
@@ -111,8 +118,27 @@ export function CalendarView({ settingsOpen, onCloseSettings }: CalendarViewProp
   // Derived highlight data for MonthView
   const highlightedDatesSet = useMemo(() => new Set(dateFilterDates), [dateFilterDates])
 
+  // Week days for WeekView
+  const weekStartsOn = lsGetNumber('weekStartsOn', 1) as 0 | 1
+  const weekDays = useMemo(() => {
+    const base = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+    base.setDate(base.getDate() + monthOffset * 7)
+    return getWeekDays(base, weekStartsOn)
+  }, [monthOffset, weekStartsOn])
+
+  // Week date options for TaskInputBar tab-cycling (all 7 days, no past-date filtering)
+  const weekDateOptions = useMemo(() => {
+    return weekDays.map(d => ({ value: toDateString(d), label: getDateLabel(d) }))
+  }, [weekDays])
+
   const handlePrev = useCallback(() => setMonthOffset(m => m - 1), [])
   const handleNext = useCallback(() => setMonthOffset(m => m + 1), [])
+  const handleToday = useCallback(() => setMonthOffset(0), [])
+
+  const handleViewChange = useCallback((mode: 'week' | 'month') => {
+    setViewMode(mode)
+    setMonthOffset(0)
+  }, [])
 
   const handleDayClick = useCallback((dateStr: string) => {
     if (dateStr === lockedDate) {
@@ -147,6 +173,21 @@ export function CalendarView({ settingsOpen, onCloseSettings }: CalendarViewProp
     playComplete(isSubtask, priority)
   }, [playComplete])
 
+  const flashSuccess = useCallback(() => {
+    if (flashTimerRef.current) clearTimeout(flashTimerRef.current)
+    setFlashMessage(getRandomMessage())
+    flashTimerRef.current = setTimeout(() => setFlashMessage(null), 1500)
+  }, [])
+
+  const handleToggleComplete = useCallback((id: string) => {
+    const task = tasks.find(t => t.id === id)
+    if (task && !task.completed) {
+      flashSuccess()
+    }
+    toggleComplete(id)
+  }, [tasks, toggleComplete, flashSuccess])
+
+
   const handleTaskClick = useCallback((task: Task) => {
     setSelectedTask(task)
   }, [])
@@ -169,11 +210,15 @@ export function CalendarView({ settingsOpen, onCloseSettings }: CalendarViewProp
         onLockedDateChange={handleLockedDateChange}
         resetKey={inputResetKey}
         hideDatePopup
-        monthDates={monthDates}
+        monthDates={viewMode === 'week' ? weekDateOptions : monthDates}
         monthTitle={monthTitle}
         onSettings={handleToggleColors}
         onPrev={handlePrev}
         onNext={handleNext}
+        viewMode={viewMode}
+        onViewChange={handleViewChange}
+        onToday={handleToday}
+        flashMessage={flashMessage}
       />
 
       {/* Task edit panel — inline, under input bar */}
@@ -203,21 +248,38 @@ export function CalendarView({ settingsOpen, onCloseSettings }: CalendarViewProp
         </div>
       )}
 
-      <MonthView
-        year={monthYear}
-        month={monthMonth}
-        getTasksForDate={getTasksForDate}
-        onToggle={toggleComplete}
-        onCyclePriority={cyclePriority}
-        onTaskClick={handleTaskClick}
-        onDayClick={handleDayClick}
-        onPlaySound={handlePlaySound}
-        highlightedDates={highlightedDatesSet}
-        activeHighlight={highlightedDate}
-        lockedDate={lockedDate}
-        onPrev={handlePrev}
-        onNext={handleNext}
-      />
+      {viewMode === 'month' ? (
+        <MonthView
+          year={monthYear}
+          month={monthMonth}
+          getTasksForDate={getTasksForDate}
+          onToggle={handleToggleComplete}
+          onCyclePriority={cyclePriority}
+          onTaskClick={handleTaskClick}
+          onDayClick={handleDayClick}
+          onPlaySound={handlePlaySound}
+          highlightedDates={highlightedDatesSet}
+          activeHighlight={highlightedDate}
+          lockedDate={lockedDate}
+          onPrev={handlePrev}
+          onNext={handleNext}
+          onMoveTask={moveTaskToDate}
+        />
+      ) : (
+        <WeekView
+          days={weekDays}
+          getTasksForDate={getTasksForDate}
+          onToggle={handleToggleComplete}
+          onCyclePriority={cyclePriority}
+          onTaskClick={handleTaskClick}
+          onDayEmptyClick={handleDayClick}
+          onPlaySound={handlePlaySound}
+          highlightedDates={highlightedDatesSet}
+          activeHighlight={highlightedDate}
+          lockedDate={lockedDate}
+          onMoveTask={moveTaskToDate}
+        />
+      )}
     </div>
   )
 }

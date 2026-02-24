@@ -24,7 +24,7 @@ export function DueDatePicker({ dueDate, onChange }: DueDatePickerProps) {
         type="date"
         value={dueDate ?? ''}
         onChange={e => onChange(e.target.value || undefined)}
-        className="text-xs font-mono bg-transparent border-none outline-none opacity-0 w-5 h-5 cursor-pointer"
+        className="text-xs font-mono bg-transparent border-none outline-none opacity-0 w-5 h-5"
         style={{ color: 'hsl(var(--h), var(--s), var(--l))' }}
       />
     </div>

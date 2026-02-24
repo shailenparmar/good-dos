@@ -9,7 +9,7 @@ interface TaskEditPanelProps {
 }
 
 const PRIORITY_COLORS = [
-  'hsla(var(--h), var(--s), var(--l), 0.5)',
+  'transparent',
   'hsl(45, 90%, 55%)',
   'hsl(0, 80%, 55%)',
 ] as const
@@ -91,8 +91,8 @@ export function TaskEditPanel({ task, categories, onUpdate, onClose }: TaskEditP
         border: '3px solid hsla(var(--h), var(--s), var(--l), 0.2)',
       }}
     >
-      {/* Single row: name input + priority + categories + repeat — all stretch to fill */}
-      <div className="flex items-stretch gap-2">
+      {/* Single row: name input + priority + categories + repeat + freq + days */}
+      <div className="flex items-center gap-2 flex-wrap">
         <input
           ref={nameRef}
           value={text}
@@ -103,12 +103,13 @@ export function TaskEditPanel({ task, categories, onUpdate, onClose }: TaskEditP
             if (e.key === 'Escape') { e.preventDefault(); onClose() }
           }}
           placeholder="task name..."
-          className="flex-1 min-w-0 bg-transparent outline-none font-mono font-black"
+          className="min-w-0 bg-transparent outline-none font-mono font-black"
           style={{
             color: 'hsl(var(--h), var(--s), var(--l))',
             fontSize: FONT,
             border: '3px solid hsla(var(--h), var(--s), var(--l), 0.2)',
             padding: '0 clamp(4px, 0.6vw, 8px)',
+            width: 'clamp(60px, 12vw, 160px)',
           }}
         />
 
@@ -117,10 +118,14 @@ export function TaskEditPanel({ task, categories, onUpdate, onClose }: TaskEditP
           <button
             key={p}
             onClick={() => onUpdate(task.id, { priority: p })}
-            className="flex-shrink-0 active:scale-90 aspect-square"
+            className="active:scale-90"
             style={{
+              width: 'clamp(18px, 2.2vw, 26px)',
+              height: 'clamp(18px, 2.2vw, 26px)',
               backgroundColor: PRIORITY_COLORS[p],
-              border: task.priority === p ? '6px solid hsl(var(--h), var(--s), var(--l))' : '3px solid transparent',
+              border: task.priority === p
+                ? '6px solid hsl(var(--h), var(--s), var(--l))'
+                : '3px solid hsla(var(--h), var(--s), var(--l), 0.2)',
             }}
           />
         ))}
@@ -130,7 +135,7 @@ export function TaskEditPanel({ task, categories, onUpdate, onClose }: TaskEditP
           <button
             key={c.id}
             onClick={() => onUpdate(task.id, { categoryId: task.categoryId === c.id ? undefined : c.id })}
-            className="flex-shrink-0 font-mono font-black active:scale-90 uppercase"
+            className="font-mono font-black active:scale-90 uppercase whitespace-nowrap"
             style={{
               color: c.color,
               border: `${task.categoryId === c.id ? '6px' : '3px'} solid ${c.color}`,
@@ -146,7 +151,7 @@ export function TaskEditPanel({ task, categories, onUpdate, onClose }: TaskEditP
         {/* Repeat toggle */}
         <button
           onClick={() => setShowRepeat(s => !s)}
-          className="flex-shrink-0 font-mono font-black active:scale-90 uppercase"
+          className="font-mono font-black active:scale-90 uppercase whitespace-nowrap"
           style={{
             color: 'hsl(var(--h), var(--s), var(--l))',
             border: `${task.recurrence ? '6px' : '3px'} solid hsla(var(--h), var(--s), var(--l), ${task.recurrence ? 1 : 0.2})`,
@@ -156,49 +161,45 @@ export function TaskEditPanel({ task, categories, onUpdate, onClose }: TaskEditP
         >
           repeat
         </button>
-      </div>
 
-      {/* Recurrence row (expandable) */}
-      {showRepeat && (
-        <div className="flex items-stretch gap-1.5 flex-wrap">
-          {FREQ_OPTIONS.map(f => (
+        {/* Recurrence options — inline after repeat */}
+        {showRepeat && FREQ_OPTIONS.map(f => (
+          <button
+            key={f}
+            onClick={() => setFrequency(f)}
+            className="font-mono font-black active:scale-90 uppercase whitespace-nowrap"
+            style={{
+              color: 'hsl(var(--h), var(--s), var(--l))',
+              border: `${activeFreq === f ? '6px' : '3px'} solid hsla(var(--h), var(--s), var(--l), ${activeFreq === f ? 1 : 0.2})`,
+              backgroundColor: activeFreq === f ? 'hsla(var(--h), var(--s), var(--l), 0.1)' : 'transparent',
+              padding: '0 clamp(4px, 0.8vw, 8px)',
+              fontSize: FONT,
+            }}
+          >
+            {f}
+          </button>
+        ))}
+
+        {/* Day-of-week toggles — inline */}
+        {showRepeat && isCustomWeekly && DAY_LABELS.map((label, i) => {
+          const active = task.recurrence?.daysOfWeek?.includes(i) ?? false
+          return (
             <button
-              key={f}
-              onClick={() => setFrequency(f)}
-              className="font-mono font-black active:scale-90 uppercase"
+              key={i}
+              onClick={() => toggleDay(i)}
+              className="font-mono font-black active:scale-90 uppercase aspect-square"
               style={{
                 color: 'hsl(var(--h), var(--s), var(--l))',
-                border: `${activeFreq === f ? '6px' : '3px'} solid hsla(var(--h), var(--s), var(--l), ${activeFreq === f ? 1 : 0.2})`,
-                backgroundColor: activeFreq === f ? 'hsla(var(--h), var(--s), var(--l), 0.1)' : 'transparent',
-                padding: '0 clamp(6px, 1vw, 10px)',
+                border: `${active ? '6px' : '3px'} solid hsla(var(--h), var(--s), var(--l), ${active ? 1 : 0.2})`,
+                backgroundColor: active ? 'hsla(var(--h), var(--s), var(--l), 0.15)' : 'transparent',
                 fontSize: FONT,
               }}
             >
-              {f}
+              {label}
             </button>
-          ))}
-
-          {/* Day-of-week toggles */}
-          {isCustomWeekly && DAY_LABELS.map((label, i) => {
-            const active = task.recurrence?.daysOfWeek?.includes(i) ?? false
-            return (
-              <button
-                key={i}
-                onClick={() => toggleDay(i)}
-                className="font-mono font-black active:scale-90 uppercase aspect-square"
-                style={{
-                  color: 'hsl(var(--h), var(--s), var(--l))',
-                  border: `${active ? '6px' : '3px'} solid hsla(var(--h), var(--s), var(--l), ${active ? 1 : 0.2})`,
-                  backgroundColor: active ? 'hsla(var(--h), var(--s), var(--l), 0.15)' : 'transparent',
-                  fontSize: FONT,
-                }}
-              >
-                {label}
-              </button>
-            )
-          })}
-        </div>
-      )}
+          )
+        })}
+      </div>
     </div>
   )
 }

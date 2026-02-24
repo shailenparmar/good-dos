@@ -13,6 +13,10 @@ interface WeekViewProps {
   onTaskClick: (task: Task) => void
   onDayEmptyClick: (dateStr: string) => void
   onPlaySound: (isSubtask: boolean) => void
+  highlightedDates?: Set<string>
+  activeHighlight?: string | null
+  lockedDate?: string | null
+  onMoveTask?: (taskId: string, newDate: string) => void
 }
 
 export function WeekView({
@@ -23,6 +27,10 @@ export function WeekView({
   onTaskClick,
   onDayEmptyClick,
   onPlaySound,
+  highlightedDates,
+  activeHighlight,
+  lockedDate,
+  onMoveTask,
 }: WeekViewProps) {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
@@ -51,6 +59,9 @@ export function WeekView({
       {days.map((date, i) => {
         const dateStr = toDateString(date)
         const isToday = isSameDay(date, today)
+        const isHighlighted = highlightedDates?.has(dateStr) ?? false
+        const isActiveHighlight = activeHighlight === dateStr
+        const isLocked = lockedDate === dateStr
         return (
           <div
             key={dateStr}
@@ -67,11 +78,15 @@ export function WeekView({
               dayName={DAY_NAMES[date.getDay()]}
               tasks={getTasksForDate(dateStr)}
               isToday={isToday}
+              isHighlighted={isHighlighted}
+              isActiveHighlight={isActiveHighlight}
+              isLockedDate={isLocked}
               onToggle={onToggle}
               onCyclePriority={onCyclePriority}
               onTaskClick={onTaskClick}
               onEmptyClick={onDayEmptyClick}
               onPlaySound={onPlaySound}
+              onMoveTask={onMoveTask}
             />
           </div>
         )

@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState, useCallback } from 'react'
 import type { Task } from '../types'
-import { getRandomMessage } from '@shared/utils/messages'
 
 interface MonthDayCellProps {
   date: Date
@@ -17,6 +16,7 @@ interface MonthDayCellProps {
   onCyclePriority: (id: string) => void
   onTaskClick: (task: Task) => void
   onPlaySound: (isSubtask: boolean, priority?: number) => void
+  onMoveTask?: (taskId: string, newDate: string) => void
 }
 
 function getPriorityColor(priority: number): string {
@@ -27,20 +27,34 @@ function getPriorityColor(priority: number): string {
   }
 }
 
-export function MonthDayCell({ date, dateStr, tasks, isToday, isCurrentMonth, filterMatch = 'none', isActiveHighlight, isLockedDate, onClick, onToggle, onTaskClick, onPlaySound }: MonthDayCellProps) {
-  const [boomId, setBoomId] = useState<string | null>(null)
-  const [boomMsg, setBoomMsg] = useState('')
+export function MonthDayCell({ date, dateStr, tasks, isToday, isCurrentMonth, filterMatch = 'none', isActiveHighlight, isLockedDate, onClick, onToggle, onTaskClick, onPlaySound, onMoveTask }: MonthDayCellProps) {
+  const [isDragOver, setIsDragOver] = useState(false)
 
-  // Keep booming task in its original position (don't shift to completed yet)
-  const incompleteTasks = tasks.filter(t => !t.completed || t.id === boomId)
-  const completedTasks = tasks.filter(t => t.completed && t.id !== boomId)
-  const allTasks = [...incompleteTasks, ...completedTasks]
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    setIsDragOver(true)
+  }, [])
 
-  useEffect(() => {
-    if (!boomId) return
-    const t = setTimeout(() => setBoomId(null), 900)
-    return () => clearTimeout(t)
-  }, [boomId])
+  const handleDragLeave = useCallback(() => {
+    setIsDragOver(false)
+  }, [])
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragOver(false)
+    const taskId = e.dataTransfer.getData('text/task-id')
+    if (taskId && onMoveTask) {
+      onMoveTask(taskId, dateStr)
+    }
+  }, [dateStr, onMoveTask])
+
+  const handleDragStart = useCallback((e: React.DragEvent, taskId: string) => {
+    e.dataTransfer.setData('text/task-id', taskId)
+    e.dataTransfer.effectAllowed = 'move'
+  }, [])
+
+  const allTasks = tasks
 
   // ── Background ──
   let bgColor = 'transparent'
@@ -70,25 +84,26 @@ export function MonthDayCell({ date, dateStr, tasks, isToday, isCurrentMonth, fi
   const handleSmack = (task: Task, e: React.MouseEvent) => {
     e.stopPropagation()
     onPlaySound(false, task.priority)
-    setBoomId(task.id)
-    setBoomMsg(getRandomMessage())
     onToggle(task.id)
   }
 
   return (
     <div
-      className="relative overflow-hidden cursor-pointer"
+      className="relative overflow-hidden"
       style={{
         opacity: cellOpacity,
-        backgroundColor: bgColor,
+        backgroundColor: isDragOver ? 'hsla(var(--h), var(--s), var(--l), 0.25)' : bgColor,
         borderRight: '3px solid hsla(var(--h), var(--s), var(--l), 0.08)',
         borderBottom: '3px solid hsla(var(--h), var(--s), var(--l), 0.08)',
-        boxShadow: highlightShadow,
+        boxShadow: isDragOver ? 'inset 0 0 0 6px hsl(var(--h), var(--s), var(--l))' : highlightShadow,
       }}
       onClick={() => onClick(dateStr)}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
     >
-      {/* Day number / TODAY — HUGE, centered, background layer */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
+      {/* Day number / TODAY — big watermark, clipped to cell */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden">
         {isToday ? (
           <div
             className="flex justify-between font-mono font-black leading-none"
@@ -116,10 +131,9 @@ export function MonthDayCell({ date, dateStr, tasks, isToday, isCurrentMonth, fi
         )}
       </div>
 
-      {/* Tasks — 2-column grid, shrinks to fit */}
+      {/* Tasks — single column, shrinks to fit */}
       {allTasks.length > 0 && (() => {
-        const useTwoCols = allTasks.length > 3
-        const totalRows = useTwoCols ? Math.ceil(allTasks.length / 2) : allTasks.length
+        const totalRows = allTasks.length
         // Scale square + text down when many tasks
         const sqSize = totalRows <= 3 ? 'clamp(20px, 3vw, 32px)' : totalRows <= 5 ? 'clamp(16px, 2.2vw, 24px)' : 'clamp(12px, 1.6vw, 18px)'
         const txtSize = totalRows <= 3 ? 'clamp(12px, 1.6vw, 16px)' : totalRows <= 5 ? 'clamp(10px, 1.2vw, 13px)' : 'clamp(8px, 1vw, 11px)'
@@ -129,23 +143,23 @@ export function MonthDayCell({ date, dateStr, tasks, isToday, isCurrentMonth, fi
           <div
             className="relative z-10 h-full grid overflow-hidden p-1"
             style={{
-              gridTemplateColumns: useTwoCols ? '1fr 1fr' : '1fr',
+              gridTemplateColumns: '1fr',
               gap,
             }}
           >
             {allTasks.map(task => {
               const isDone = task.completed
-              const isBooming = boomId === task.id
-              const justBoomed = isDone && isBooming
 
               return (
                 <div
                   key={task.id}
                   className="flex items-center gap-1 min-w-0"
+                  draggable
+                  onDragStart={e => handleDragStart(e, task.id)}
                 >
                   {isDone ? (
                     <button
-                      className="flex-shrink-0 relative active:scale-75 cursor-pointer"
+                      className="flex-shrink-0 relative active:scale-75"
                       style={{
                         width: sqSize,
                         height: sqSize,
@@ -153,7 +167,6 @@ export function MonthDayCell({ date, dateStr, tasks, isToday, isCurrentMonth, fi
                         border: '3px solid black',
                       }}
                       onClick={e => { e.stopPropagation(); onToggle(task.id) }}
-
                     >
                       <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
                         <line x1="0" y1="0" x2="100" y2="100" stroke="hsl(var(--h), var(--s), var(--l))" strokeWidth="12" />
@@ -168,26 +181,24 @@ export function MonthDayCell({ date, dateStr, tasks, isToday, isCurrentMonth, fi
                         height: sqSize,
                         backgroundColor: getPriorityColor(task.priority),
                         border: '3px solid black',
-                        ...(isBooming ? { transform: 'scale(0)', opacity: 0 } : {}),
                       }}
                       onClick={e => handleSmack(task, e)}
                     />
                   )}
                   <button
-                    className="flex-1 min-w-0 text-left truncate font-mono font-black uppercase"
+                    className="flex-1 min-w-0 text-left truncate font-mono font-black hover:underline"
                     style={{
                       color: 'hsl(var(--h), var(--s), var(--l))',
-                      opacity: isBooming ? 0.5 : 1,
                       fontSize: txtSize,
                       lineHeight: '1.2',
-                      textDecoration: isDone && !justBoomed ? 'line-through' : 'none',
+                      textDecoration: isDone ? 'line-through' : 'none',
                     }}
                     onClick={e => {
                       e.stopPropagation()
-                      if (!isDone) onTaskClick(task)
+                      onTaskClick(task)
                     }}
                   >
-                    {isBooming || justBoomed ? boomMsg : (task.text || 'untitled')}
+                    {task.text || 'untitled'}
                   </button>
                 </div>
               )

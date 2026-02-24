@@ -122,10 +122,10 @@ export function fuzzyMatch(query: string, label: string): boolean {
   const dayMatch = (prefix: string) =>
     FULL_DAY_NAMES.some(full => full.startsWith(prefix) && full.startsWith(dayName))
 
-  // Pure letter query — match against full day names + substring
-  // "tue" → all tuesdays, "thur" → all thursdays, "today" / "tom" → substring
+  // Pure letter query — match against start of any word in label or full day names
+  // "tue" → all tuesdays, "thur" → all thursdays, "today" / "tom" → starts with
   if (/^[a-z]+$/.test(q)) {
-    if (labelLower.includes(q)) return true
+    if (parts.some(p => p.startsWith(q))) return true
     if (dayMatch(q)) return true
     return false
   }
