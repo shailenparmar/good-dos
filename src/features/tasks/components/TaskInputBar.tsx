@@ -109,7 +109,7 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
       if (e.key === 'Tab') {
         e.preventDefault()
 
-        // If not in date step, reset to date step first
+        // If not in date step, reset to date step and snap to today — don't cycle yet
         if (stepRef.current !== 'date') {
           setStep('date')
           setInputValue('')
@@ -117,6 +117,11 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
           setLockedDate(null)
           setLockedDateLabel(null)
           setLockedName(null)
+          setIsActive(true)
+          setTabbedDateIndex(null)
+          onTodayRef.current?.()
+          inputRef.current?.focus()
+          return
         }
 
         setIsActive(true)
