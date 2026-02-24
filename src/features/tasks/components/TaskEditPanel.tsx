@@ -1,10 +1,13 @@
 import { useState, useRef, useEffect } from 'react'
-import type { Task, Category, RecurrenceRule } from '../types'
+import { db } from '@shared/storage/db'
+import { tagColor } from '../types'
+import type { Task, TypeTag, RecurrenceRule } from '../types'
 
 interface TaskEditPanelProps {
   task: Task
-  categories: Category[]
+  typetags: TypeTag[]
   onUpdate: (id: string, changes: Partial<Task>) => void
+  onDelete: (id: string) => void
   onClose: () => void
 }
 
@@ -17,11 +20,17 @@ const PRIORITY_COLORS = [
 const FREQ_OPTIONS = ['none', 'daily', 'weekly', 'monthly'] as const
 const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
 
+function generateId(): string {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8)
+}
 
-export function TaskEditPanel({ task, categories, onUpdate, onClose }: TaskEditPanelProps) {
+export function TaskEditPanel({ task, typetags, onUpdate, onDelete, onClose }: TaskEditPanelProps) {
   const [text, setText] = useState(task.text)
   const [showRepeat, setShowRepeat] = useState(!!task.recurrence)
+  const [addingTag, setAddingTag] = useState(false)
+  const [newTagName, setNewTagName] = useState('')
   const nameRef = useRef<HTMLInputElement>(null)
+  const tagInputRef = useRef<HTMLInputElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
 
   // Sync text when task changes externally
@@ -29,6 +38,31 @@ export function TaskEditPanel({ task, categories, onUpdate, onClose }: TaskEditP
 
   // Focus name on open
   useEffect(() => { nameRef.current?.focus() }, [])
+
+  // Focus tag input when adding
+  useEffect(() => {
+    if (addingTag) tagInputRef.current?.focus()
+  }, [addingTag])
+
+  // Trap Tab within the panel — use native listener so preventDefault fires before browser default
+  useEffect(() => {
+    const panel = panelRef.current
+    if (!panel) return
+    const handleTab = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return
+      const focusable = Array.from(panel.querySelectorAll<HTMLElement>('button, input, [tabindex]'))
+      if (focusable.length === 0) return
+      const idx = focusable.indexOf(document.activeElement as HTMLElement)
+      if (idx === -1) return
+      e.preventDefault()
+      const next = e.shiftKey
+        ? (idx <= 0 ? focusable.length - 1 : idx - 1)
+        : (idx >= focusable.length - 1 ? 0 : idx + 1)
+      focusable[next].focus()
+    }
+    panel.addEventListener('keydown', handleTab)
+    return () => panel.removeEventListener('keydown', handleTab)
+  }, [])
 
   // Click outside to close
   useEffect(() => {
@@ -45,6 +79,22 @@ export function TaskEditPanel({ task, categories, onUpdate, onClose }: TaskEditP
     const trimmed = text.trim()
     if (trimmed && trimmed !== task.text) {
       onUpdate(task.id, { text: trimmed })
+    }
+  }
+
+  const addTypetag = async () => {
+    const name = newTagName.trim().toLowerCase()
+    if (!name) return
+    await db.typetags.add({ id: generateId(), name })
+    setNewTagName('')
+    setAddingTag(false)
+  }
+
+  const deleteTypetag = async (id: string) => {
+    await db.typetags.delete(id)
+    const tasksWithTag = await db.tasks.where('categoryId').equals(id).toArray()
+    for (const t of tasksWithTag) {
+      await db.tasks.update(t.id, { categoryId: undefined })
     }
   }
 
@@ -86,20 +136,50 @@ export function TaskEditPanel({ task, categories, onUpdate, onClose }: TaskEditP
   return (
     <div
       ref={panelRef}
-      className="flex-shrink-0 flex flex-col gap-1 mx-3 my-2 px-2 py-2"
+      className="flex-shrink-0 flex flex-col"
       style={{
-        border: '3px solid hsla(var(--h), var(--s), var(--l), 0.2)',
+        gap: 'var(--sp-xs)',
+        padding: 'var(--sp-sm) var(--sp-md)',
       }}
     >
-      {/* Single row: name input + priority + categories + repeat + freq + days */}
-      <div className="flex items-center gap-2 flex-wrap">
+      <div
+        className="flex flex-col"
+        style={{
+          gap: 'var(--sp-xs)',
+          padding: 'var(--sp-sm)',
+          border: '3px solid hsla(var(--h), var(--s), var(--l), 0.2)',
+        }}
+      >
+      {/* Single row: priority + name input + typetags + [+] + repeat + freq + days */}
+      <div className="flex items-center flex-wrap" style={{ gap: 'var(--sp-sm)' }}>
+        {/* Priority rectangles with labels */}
+        {([0, 1, 2] as const).map(p => (
+          <button
+            key={p}
+            onClick={() => onUpdate(task.id, { priority: p })}
+            className="font-mono font-black active:scale-90 uppercase whitespace-nowrap"
+            style={{
+              backgroundColor: PRIORITY_COLORS[p],
+              border: task.priority === p
+                ? '6px solid hsl(var(--h), var(--s), var(--l))'
+                : '3px solid hsla(var(--h), var(--s), var(--l), 0.2)',
+              padding: '0 var(--sp-sm-r)',
+              fontSize: FONT,
+              color: 'hsl(var(--h), var(--s), var(--l))',
+            }}
+          >
+            {p === 0 ? 'none' : p === 1 ? 'medium' : 'high'}
+          </button>
+        ))}
+
+        {/* Name input (nameedit) */}
         <input
           ref={nameRef}
           value={text}
           onChange={e => setText(e.target.value)}
           onBlur={saveText}
           onKeyDown={e => {
-            if (e.key === 'Enter') { e.preventDefault(); nameRef.current?.blur() }
+            if (e.key === 'Enter') { e.preventDefault(); saveText() }
             if (e.key === 'Escape') { e.preventDefault(); onClose() }
           }}
           placeholder="task name..."
@@ -108,45 +188,70 @@ export function TaskEditPanel({ task, categories, onUpdate, onClose }: TaskEditP
             color: 'hsl(var(--h), var(--s), var(--l))',
             fontSize: FONT,
             border: '3px solid hsla(var(--h), var(--s), var(--l), 0.2)',
-            padding: '0 clamp(4px, 0.6vw, 8px)',
-            width: 'clamp(60px, 12vw, 160px)',
+            padding: '0 var(--sp-sm-r)',
+            width: 'clamp(96px, 14.4vw, 192px)',
           }}
         />
 
-        {/* Priority squares */}
-        {([0, 1, 2] as const).map(p => (
-          <button
-            key={p}
-            onClick={() => onUpdate(task.id, { priority: p })}
-            className="active:scale-90"
+        {/* Typetags */}
+        {typetags.map((tag, i) => {
+          const color = tagColor(i)
+          return (
+            <button
+              key={tag.id}
+              onClick={() => onUpdate(task.id, { categoryId: task.categoryId === tag.id ? undefined : tag.id })}
+              onKeyDown={e => { if (e.key === 'Backspace') { e.preventDefault(); deleteTypetag(tag.id) } }}
+              className="font-mono font-black active:scale-90 uppercase whitespace-nowrap"
+              style={{
+                color,
+                border: `${task.categoryId === tag.id ? '6px' : '3px'} solid ${color}`,
+                backgroundColor: task.categoryId === tag.id ? tagColor(i) + '26' : 'transparent',
+                padding: '0 var(--sp-sm-r)',
+                fontSize: FONT,
+              }}
+            >
+              {tag.name}
+            </button>
+          )
+        })}
+
+        {/* Add typetag inline */}
+        {addingTag ? (
+          <input
+            ref={tagInputRef}
+            value={newTagName}
+            onChange={e => setNewTagName(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter') { e.preventDefault(); addTypetag() }
+              if (e.key === 'Escape') { e.preventDefault(); setAddingTag(false); setNewTagName('') }
+            }}
+            onBlur={() => {
+              if (!newTagName.trim()) { setAddingTag(false); setNewTagName('') }
+            }}
+            placeholder="tag name..."
+            className="min-w-0 bg-transparent outline-none font-mono font-black"
             style={{
-              width: 'clamp(18px, 2.2vw, 26px)',
-              height: 'clamp(18px, 2.2vw, 26px)',
-              backgroundColor: PRIORITY_COLORS[p],
-              border: task.priority === p
-                ? '6px solid hsl(var(--h), var(--s), var(--l))'
-                : '3px solid hsla(var(--h), var(--s), var(--l), 0.2)',
+              color: 'hsl(var(--h), var(--s), var(--l))',
+              fontSize: FONT,
+              border: '3px solid hsla(var(--h), var(--s), var(--l), 0.2)',
+              padding: '0 var(--sp-sm-r)',
+              width: 'clamp(96px, 14.4vw, 192px)',
             }}
           />
-        ))}
-
-        {/* Categories */}
-        {categories.map(c => (
+        ) : (
           <button
-            key={c.id}
-            onClick={() => onUpdate(task.id, { categoryId: task.categoryId === c.id ? undefined : c.id })}
-            className="font-mono font-black active:scale-90 uppercase whitespace-nowrap"
+            onClick={() => setAddingTag(true)}
+            className="font-mono font-black active:scale-90"
             style={{
-              color: c.color,
-              border: `${task.categoryId === c.id ? '6px' : '3px'} solid ${c.color}`,
-              backgroundColor: task.categoryId === c.id ? c.color + '22' : 'transparent',
-              padding: '0 clamp(4px, 0.8vw, 8px)',
+              color: 'hsl(var(--h), var(--s), var(--l))',
+              border: '3px solid hsla(var(--h), var(--s), var(--l), 0.2)',
+              padding: '0 var(--sp-sm-r)',
               fontSize: FONT,
             }}
           >
-            {c.name}
+            +
           </button>
-        ))}
+        )}
 
         {/* Repeat toggle */}
         <button
@@ -155,7 +260,7 @@ export function TaskEditPanel({ task, categories, onUpdate, onClose }: TaskEditP
           style={{
             color: 'hsl(var(--h), var(--s), var(--l))',
             border: `${task.recurrence ? '6px' : '3px'} solid hsla(var(--h), var(--s), var(--l), ${task.recurrence ? 1 : 0.2})`,
-            padding: '0 clamp(4px, 0.8vw, 8px)',
+            padding: '0 var(--sp-sm-r)',
             fontSize: FONT,
           }}
         >
@@ -172,7 +277,7 @@ export function TaskEditPanel({ task, categories, onUpdate, onClose }: TaskEditP
               color: 'hsl(var(--h), var(--s), var(--l))',
               border: `${activeFreq === f ? '6px' : '3px'} solid hsla(var(--h), var(--s), var(--l), ${activeFreq === f ? 1 : 0.2})`,
               backgroundColor: activeFreq === f ? 'hsla(var(--h), var(--s), var(--l), 0.1)' : 'transparent',
-              padding: '0 clamp(4px, 0.8vw, 8px)',
+              padding: '0 var(--sp-sm-r)',
               fontSize: FONT,
             }}
           >
@@ -199,6 +304,21 @@ export function TaskEditPanel({ task, categories, onUpdate, onClose }: TaskEditP
             </button>
           )
         })}
+
+        {/* Delete — pushed to far right */}
+        <button
+          onMouseDown={(e) => { e.stopPropagation(); onDelete(task.id) }}
+          className="font-mono font-black active:scale-90 uppercase whitespace-nowrap ml-auto"
+          style={{
+            color: 'hsl(var(--h), var(--s), var(--l))',
+            border: '3px solid hsla(var(--h), var(--s), var(--l), 0.2)',
+            padding: '0 var(--sp-sm-r)',
+            fontSize: FONT,
+          }}
+        >
+          delete
+        </button>
+      </div>
       </div>
     </div>
   )

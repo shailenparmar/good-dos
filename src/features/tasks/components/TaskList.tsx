@@ -22,7 +22,7 @@ export function TaskList() {
     unindentTask,
   } = useTasks()
 
-  const categories = useLiveQuery(() => db.categories.toArray()) ?? []
+  const categories = useLiveQuery(() => db.typetags.toArray()) ?? []
   const { playComplete } = useTaskSound()
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)

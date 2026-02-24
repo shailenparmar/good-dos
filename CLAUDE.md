@@ -22,7 +22,7 @@ src/
 │   ├── tasks/
 │   │   ├── components/    # Calendar views, task items, inputs, modals
 │   │   ├── hooks/         # useTasks, useRecurring, useAutoCleanup, useTaskSound
-│   │   └── types.ts       # Task, Category, RecurrenceRule
+│   │   └── types.ts       # Task, TypeTag, RecurrenceRule
 │   ├── theme/
 │   │   ├── components/    # ColorPicker, ThemePicker
 │   │   ├── context/       # ThemeContext & ThemeProvider
@@ -48,7 +48,7 @@ When the user says **this**, they mean **that** in code:
 |------|---------|-----------|
 | **month view** | The 7-column calendar grid showing the full month | `MonthView.tsx` |
 | **week view** | The 7-column day-by-day vertical list view | `WeekView.tsx` |
-| **day cell** | A single date square in the month view | `MonthDayCell.tsx` |
+| **daycell** | A single date square in the month view | `MonthDayCell.tsx` |
 | **day column** | A single day's vertical strip in week view | `DayColumn.tsx` |
 
 ### Task UI
@@ -57,14 +57,16 @@ When the user says **this**, they mean **that** in code:
 | **checkbox** / **square** | The small colored square next to a task (click to complete) | The `<button>` with `getPriorityColor()` in `MonthDayCell` / `CalendarTaskItem` |
 | **X** | The crossed-out square shown when a task is done | The `<svg>` with two diagonal lines inside the checkbox |
 | **task text** / **task name** | The truncated label next to the checkbox | The `<button>` with `task.text` |
-| **edit menu** / **task edit** | The panel that opens when you click a task's text | `TaskEditPanel.tsx` |
+| **taskedit** | The panel that opens when you click a task's text | `TaskEditPanel.tsx` |
 | **smack** | Clicking an incomplete task's checkbox to mark it done (plays sound) | `handleSmack()` in `MonthDayCell` |
+| **typetag** | Auto-colored tag assigned to a task (replaces old "category"). Fixed color palette in `TAG_COLORS` (`types.ts`), indexed by position | `TypeTag` in `types.ts`, `tagColor()` for colors, rendered in `TaskEditPanel.tsx` |
 
 ### Input Bar
 | Term | Meaning | Component / Code |
 |------|---------|-----------------|
-| **input box** | The main text input at the top of the screen | `TaskInputBar.tsx`, the `<input>` element |
-| **breadcrumb** | The locked date/name chips shown left of the input after selection | The `lockedDateLabel` / `lockedName` divs in `TaskInputBar` |
+| **typer** | The main text input at the top of the screen | `TaskInputBar.tsx`, the `<input>` element |
+| **daybc** | The locked date breadcrumb chip (e.g. "FRI 27") shown after selecting a day | The `lockedDate` / `lockedDateLabel` div in `TaskInputBar` |
+| **taskbc** | The locked task name breadcrumb chip shown after typing a name | The `lockedName` div in `TaskInputBar` |
 | **date step** | First step of task creation — pick a day | `step === 'date'` |
 | **name step** | Second step — type the task name | `step === 'name'` |
 | **priority step** | Third step — pick none/yellow/red | `step === 'priority'` |
@@ -93,6 +95,44 @@ When the user says **this**, they mean **that** in code:
 | **watermark** | The large faded day number (or "TODAY") behind tasks in each cell | The `absolute inset-0` div in `MonthDayCell` with opacity 0.2 |
 | **highlight** | The inset box-shadow on a cell when it matches input filtering | `highlightShadow` in `MonthDayCell` |
 | **locked date** | The date that's been selected in the input bar, shown with thick highlight | `isLockedDate` / `lockedDate` state |
+
+## View Parity Contract (MonthView ↔ WeekView)
+
+Any change to one view MUST be mirrored in the other. The shared rules:
+
+### Task Rendering
+Both views render tasks as **`[square checkbox][task text box]`**:
+- **Checkbox**: `aspect-ratio: 1`, `flex-shrink-0`, fill = `getPriorityColor(priority)`, border = typetag color or `0.2` default. X SVG inside (strokeWidth 12) when completed.
+- **Task text box**: `flex-1 min-w-0`, border = same as checkbox, `borderLeft: none`. Font mono, weight 400 (700 on hover/selected).
+- **Month** renders inline in `MonthDayCell.tsx`. **Week** uses `CalendarTaskItem.tsx` in `DayColumn.tsx`.
+
+### Click Behavior
+- **Day selection**: `onMouseDown` (NOT onClick) to avoid layout-shift issues when edit panel opens.
+- **Task interactions**: `e.stopPropagation()` on both checkbox and text box to prevent bubbling to day click.
+- **Checkbox click**: plays sound + toggles complete.
+- **Text click**: toggles edit panel (click same task = close).
+
+### Highlight Shadows (inset box-shadow, consistent across views)
+| State | Shadow |
+|-------|--------|
+| Locked date | `inset 0 0 0 12px` alpha `0.7` |
+| Active highlight | `inset 0 0 0 12px` alpha `0.7` |
+| Filter match | `inset 0 0 0 6px` alpha `0.6` |
+| Cursor (month only) | `inset 0 0 0 6px` alpha `0.4` |
+| Today | `inset 0 0 0 3px` alpha `0.2` |
+
+### Date Options for Input Bar
+Both views provide date options sorted **today-first** (closest future dates first, then past). Never start from the leftmost/earliest day of the period.
+
+### Cell Borders
+- **Month**: 3px `borderRight` + `borderBottom` on each cell, outer `border` on the grid container (alpha `0.1` / `0.08`).
+- **Week**: 3px `borderRight` between columns, 3px `borderTop` on each `DayColumn` (alpha `0.1` / `0.07`).
+
+### Drag & Drop
+Both support dragging tasks between dates via `text/task-id` dataTransfer.
+
+### Props Passed Through
+Both views receive and forward: `onToggle`, `onCyclePriority`, `onTaskClick`, `onPlaySound(isSubtask, priority)`, `onMoveTask`, `categoryColorMap`, `selectedTaskId`, highlight/locked state.
 
 ## Style Rules (see docs/STYLE_GUIDE.md for full details)
 
@@ -125,9 +165,11 @@ When the user says **this**, they mean **that** in code:
 }
 ```
 
-### Category
+### TypeTag
 ```typescript
-{ id: string, name: string, color: string }
+{ id: string, name: string }
+// Colors from fixed TAG_COLORS palette in types.ts: blue, green, purple, teal, pink, indigo
+// Access via tagColor(index) — cycles through palette
 ```
 
 ### RecurrenceRule
@@ -143,9 +185,9 @@ When the user says **this**, they mean **that** in code:
 
 ## Database
 
-Dexie v1 schema in `src/shared/storage/db.ts`:
+Dexie v2 schema in `src/shared/storage/db.ts`:
 - **tasks:** indexed on `id, parentId, categoryId, dueDate, completed, sortOrder, createdAt`
-- **categories:** indexed on `id, name`
+- **typetags:** indexed on `id, name` (migrated from `categories` in v2)
 
 ## Key Hooks
 

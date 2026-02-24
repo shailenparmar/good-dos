@@ -5,6 +5,7 @@ import { useTasks } from '../hooks/useTasks'
 import { useRecurring } from '../hooks/useRecurring'
 import { useAutoCleanup } from '../hooks/useAutoCleanup'
 import { useTaskSound } from '../hooks/useTaskSound'
+import { tagColor } from '../types'
 import type { Task } from '../types'
 import { formatCalendarMonth, getMonthGrid, getWeekDays, toDateString, getDateLabel } from '@shared/utils/date'
 import { getRandomMessage } from '@shared/utils/messages'
@@ -29,9 +30,10 @@ export function CalendarView({ settingsOpen, onCloseSettings }: CalendarViewProp
     toggleComplete,
     cyclePriority,
     moveTaskToDate,
+    deleteTask,
   } = useTasks()
 
-  const categories = useLiveQuery(() => db.categories.toArray()) ?? []
+  const typetags = useLiveQuery(() => db.typetags.toArray()) ?? []
   const { playComplete } = useTaskSound()
 
   useAutoCleanup(tasks, null)
@@ -48,6 +50,7 @@ export function CalendarView({ settingsOpen, onCloseSettings }: CalendarViewProp
   const [colorsOpen, setColorsOpen] = useState(false)
   const [flashMessage, setFlashMessage] = useState<string | null>(null)
   const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [cursorDate, setCursorDate] = useState<string | null>(null)
 
   // Refs for ESC handler (avoid stale closures)
   const selectedTaskRef = useRef(selectedTask)
@@ -58,12 +61,15 @@ export function CalendarView({ settingsOpen, onCloseSettings }: CalendarViewProp
   useEffect(() => { settingsOpenRef.current = settingsOpen }, [settingsOpen])
   useEffect(() => { colorsOpenRef.current = colorsOpen }, [colorsOpen])
 
-  // ESC handler: unwind colors → settings → modal
+  // ESC handler: progressive unwind — colors → settings → edit panel → snap to today
+  // The input bar handles its own Esc unwinding (priority → name → date → blur)
+  // and only lets Esc through once it's fully reset
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return
       if (e.repeat) return
 
+      // Let the input bar handle its own unwinding first
       const target = e.target as HTMLElement
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return
 
@@ -83,6 +89,10 @@ export function CalendarView({ settingsOpen, onCloseSettings }: CalendarViewProp
         setSelectedTask(null)
         return
       }
+
+      // Nothing open — snap view back to today, hide cursor
+      setMonthOffset(0)
+      setCursorDate(null)
     }
 
     window.addEventListener('keydown', handleKeyDown)
@@ -126,13 +136,36 @@ export function CalendarView({ settingsOpen, onCloseSettings }: CalendarViewProp
     return getWeekDays(base, weekStartsOn)
   }, [monthOffset, weekStartsOn])
 
-  // Week date options for TaskInputBar tab-cycling (all 7 days, no past-date filtering)
+  // Week date options for TaskInputBar tab-cycling — today-first, then future, then past
   const weekDateOptions = useMemo(() => {
-    return weekDays.map(d => ({ value: toDateString(d), label: getDateLabel(d) }))
+    const now = new Date()
+    now.setHours(0, 0, 0, 0)
+    const todayMs = now.getTime()
+    const all = weekDays.map(d => ({ value: toDateString(d), label: getDateLabel(d), ms: d.getTime() }))
+    const future = all.filter(d => d.ms >= todayMs).sort((a, b) => a.ms - b.ms)
+    const past = all.filter(d => d.ms < todayMs).sort((a, b) => a.ms - b.ms)
+    return [...future, ...past]
   }, [weekDays])
 
   const handlePrev = useCallback(() => setMonthOffset(m => m - 1), [])
   const handleNext = useCallback(() => setMonthOffset(m => m + 1), [])
+
+  const handleCursorChange = useCallback((dateStr: string) => {
+    setCursorDate(dateStr)
+    // Cursor acts as day-select — update breadcrumb
+    setLockedDate(dateStr)
+    setPrefillDate(dateStr)
+    // If cursor moves to a different month, navigate there
+    const d = new Date(dateStr + 'T00:00:00')
+    const cursorYear = d.getFullYear()
+    const cursorMonth = d.getMonth()
+    if (cursorYear !== monthYear || cursorMonth !== monthMonth) {
+      const now = new Date()
+      now.setHours(0, 0, 0, 0)
+      const diffMonths = (cursorYear - now.getFullYear()) * 12 + (cursorMonth - now.getMonth())
+      setMonthOffset(diffMonths)
+    }
+  }, [monthYear, monthMonth])
   const handleToday = useCallback(() => setMonthOffset(0), [])
 
   const handleViewChange = useCallback((mode: 'week' | 'month') => {
@@ -142,9 +175,13 @@ export function CalendarView({ settingsOpen, onCloseSettings }: CalendarViewProp
 
   const handleDayClick = useCallback((dateStr: string) => {
     if (dateStr === lockedDate) {
+      // Unpopulate — clear immediately
+      setLockedDate(null)
       setInputResetKey(k => k + 1)
       setPrefillDate(null)
     } else {
+      // Populate — highlight immediately, then prefill input
+      setLockedDate(dateStr)
       setPrefillDate(dateStr)
     }
   }, [lockedDate])
@@ -183,13 +220,17 @@ export function CalendarView({ settingsOpen, onCloseSettings }: CalendarViewProp
     const task = tasks.find(t => t.id === id)
     if (task && !task.completed) {
       flashSuccess()
+    } else {
+      // Uncompleting — dismiss any celebration
+      if (flashTimerRef.current) clearTimeout(flashTimerRef.current)
+      setFlashMessage(null)
     }
     toggleComplete(id)
   }, [tasks, toggleComplete, flashSuccess])
 
 
   const handleTaskClick = useCallback((task: Task) => {
-    setSelectedTask(task)
+    setSelectedTask(prev => prev?.id === task.id ? null : task)
   }, [])
 
   const handleToggleColors = useCallback(() => {
@@ -198,9 +239,11 @@ export function CalendarView({ settingsOpen, onCloseSettings }: CalendarViewProp
 
   const categoryColorMap = useMemo(() => {
     const map: Record<string, string> = {}
-    for (const c of categories) map[c.id] = c.color
+    for (let i = 0; i < typetags.length; i++) {
+      map[typetags[i].id] = tagColor(i)
+    }
     return map
-  }, [categories])
+  }, [typetags])
 
   const currentSelectedTask = selectedTask
     ? tasks.find(t => t.id === selectedTask.id) ?? null
@@ -219,20 +262,29 @@ export function CalendarView({ settingsOpen, onCloseSettings }: CalendarViewProp
         monthDates={viewMode === 'week' ? weekDateOptions : monthDates}
         monthTitle={monthTitle}
         onSettings={handleToggleColors}
+        colorsOpen={colorsOpen}
         onPrev={handlePrev}
         onNext={handleNext}
         viewMode={viewMode}
         onViewChange={handleViewChange}
         onToday={handleToday}
         flashMessage={flashMessage}
+        onEscape={() => {
+          if (colorsOpen) { setColorsOpen(false); return }
+          if (settingsOpen) { onCloseSettings(); return }
+          if (selectedTask) { setSelectedTask(null); return }
+          setMonthOffset(0)
+          setCursorDate(toDateString(new Date()))
+        }}
       />
 
       {/* Task edit panel — inline, under input bar */}
       {currentSelectedTask && (
         <TaskEditPanel
           task={currentSelectedTask}
-          categories={categories}
+          typetags={typetags}
           onUpdate={updateTask}
+          onDelete={async (id) => { await deleteTask(id); setSelectedTask(null) }}
           onClose={() => setSelectedTask(null)}
         />
       )}
@@ -240,10 +292,12 @@ export function CalendarView({ settingsOpen, onCloseSettings }: CalendarViewProp
       {/* Inline color picker — 4 equal rectangles */}
       {colorsOpen && (
         <div
-          className="flex-shrink-0 grid gap-2 px-3 pt-0 pb-3"
+          className="flex-shrink-0 grid"
           style={{
+            gap: 'var(--sp-sm)',
+            padding: '0 var(--sp-md) var(--sp-md) var(--sp-md)',
             gridTemplateColumns: '1fr 1fr 1fr 1fr',
-            height: 'calc(clamp(22px, 3vw, 36px) + clamp(6px, 1vw, 12px) * 2 + 8px + 24px)',
+            height: 'calc(clamp(22px, 3vw, 36px) + var(--sp-md-r) * 2 + 8px + 24px)',
             borderBottom: '3px solid hsla(var(--h), var(--s), var(--l), 0.1)',
           }}
         >
@@ -272,6 +326,8 @@ export function CalendarView({ settingsOpen, onCloseSettings }: CalendarViewProp
           onMoveTask={moveTaskToDate}
           categoryColorMap={categoryColorMap}
           selectedTaskId={selectedTask?.id ?? null}
+          cursorDate={cursorDate}
+          onCursorChange={handleCursorChange}
         />
       ) : (
         <WeekView

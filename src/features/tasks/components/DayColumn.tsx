@@ -15,7 +15,7 @@ interface DayColumnProps {
   onCyclePriority: (id: string) => void
   onTaskClick: (task: Task) => void
   onEmptyClick: (dateStr: string) => void
-  onPlaySound: (isSubtask: boolean) => void
+  onPlaySound: (isSubtask: boolean, priority?: number) => void
   onMoveTask?: (taskId: string, newDate: string) => void
   categoryColorMap?: Record<string, string>
   selectedTaskId?: string | null
@@ -64,9 +64,9 @@ export function DayColumn({
   // Highlight via inset box-shadow (same pattern as MonthDayCell)
   let highlightShadow = 'none'
   if (isLockedDate) {
-    highlightShadow = 'inset 0 0 0 12px hsl(var(--h), var(--s), var(--l))'
+    highlightShadow = 'inset 0 0 0 12px hsla(var(--h), var(--s), var(--l), 0.7)'
   } else if (isHighlighted && isActiveHighlight) {
-    highlightShadow = 'inset 0 0 0 12px hsl(var(--h), var(--s), var(--l))'
+    highlightShadow = 'inset 0 0 0 12px hsla(var(--h), var(--s), var(--l), 0.7)'
   } else if (isHighlighted) {
     highlightShadow = 'inset 0 0 0 6px hsla(var(--h), var(--s), var(--l), 0.6)'
   } else if (isToday) {
@@ -79,6 +79,7 @@ export function DayColumn({
       style={{
         boxShadow: isDragOver ? 'inset 0 0 0 6px hsl(var(--h), var(--s), var(--l))' : highlightShadow,
         backgroundColor: isDragOver ? 'hsla(var(--h), var(--s), var(--l), 0.15)' : undefined,
+        borderTop: '3px solid hsla(var(--h), var(--s), var(--l), 0.1)',
       }}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -86,7 +87,8 @@ export function DayColumn({
     >
       {/* Header */}
       <div
-        className="flex items-baseline gap-1.5 px-2.5 py-2 flex-shrink-0"
+        className="flex items-baseline flex-shrink-0"
+        style={{ gap: 'var(--sp-sm)', padding: 'var(--sp-sm) var(--sp-sm)' }}
       >
         <span
           className="font-mono font-black uppercase"
@@ -103,7 +105,7 @@ export function DayColumn({
       </div>
 
       {/* Tasks */}
-      <div className="overflow-y-auto scrollbar-hide px-1.5 py-1 flex flex-col gap-0.5">
+      <div className="overflow-y-auto scrollbar-hide flex flex-col" style={{ padding: 'var(--sp-xs)', gap: 'var(--sp-xs)' }}>
         {tasks.map(task => (
           <CalendarTaskItem
             key={task.id}

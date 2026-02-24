@@ -36,8 +36,9 @@ export function EncouragingMessage({ show, onDone }: EncouragingMessageProps) {
 
   return (
     <span
-      className="text-xs font-mono ml-2 inline-block"
+      className="text-xs font-mono inline-block"
       style={{
+        marginLeft: 'var(--sp-sm)',
         color: 'hsla(var(--h), var(--s), var(--l), 0.6)',
         opacity,
       }}

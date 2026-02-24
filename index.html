@@ -27,10 +27,10 @@
         }
         var th = lsGet('colorHue') ?? 0;
         var ts = lsGet('colorSaturation') ?? 0;
-        var tl = lsGet('colorLightness') ?? 95;
-        var bh = lsGet('bgHue') ?? 0;
-        var bs = lsGet('bgSaturation') ?? 0;
-        var bl = lsGet('bgLightness') ?? 8;
+        var tl = lsGet('colorLightness') ?? 0;
+        var bh = lsGet('bgHue') ?? 120;
+        var bs = lsGet('bgSaturation') ?? 100;
+        var bl = lsGet('bgLightness') ?? 75;
         el.style.setProperty('--h', th);
         el.style.setProperty('--s', ts + '%');
         el.style.setProperty('--l', tl + '%');

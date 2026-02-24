@@ -3,7 +3,7 @@ import type { ColorPreset } from '../types'
 import { lsGetNumber, lsSet } from '@shared/storage'
 
 export const DEFAULT_PRESETS: ColorPreset[] = [
-  { hue: 0, sat: 0, light: 95, bgHue: 0, bgSat: 0, bgLight: 8 },        // monochrome
+  { hue: 0, sat: 0, light: 0, bgHue: 120, bgSat: 100, bgLight: 75 },     // default
   { hue: 210, sat: 60, light: 85, bgHue: 220, bgSat: 50, bgLight: 12 },  // navy
   { hue: 140, sat: 55, light: 75, bgHue: 150, bgSat: 40, bgLight: 10 },  // forest
   { hue: 40, sat: 80, light: 70, bgHue: 30, bgSat: 30, bgLight: 10 },    // amber
@@ -33,10 +33,10 @@ const ThemeContext = createContext<ThemeContextValue | null>(null)
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [hue, setHueState] = useState(() => lsGetNumber('colorHue', 0))
   const [saturation, setSaturationState] = useState(() => lsGetNumber('colorSaturation', 0))
-  const [lightness, setLightnessState] = useState(() => lsGetNumber('colorLightness', 95))
-  const [bgHue, setBgHueState] = useState(() => lsGetNumber('bgHue', 0))
-  const [bgSaturation, setBgSaturationState] = useState(() => lsGetNumber('bgSaturation', 0))
-  const [bgLightness, setBgLightnessState] = useState(() => lsGetNumber('bgLightness', 8))
+  const [lightness, setLightnessState] = useState(() => lsGetNumber('colorLightness', 0))
+  const [bgHue, setBgHueState] = useState(() => lsGetNumber('bgHue', 120))
+  const [bgSaturation, setBgSaturationState] = useState(() => lsGetNumber('bgSaturation', 100))
+  const [bgLightness, setBgLightnessState] = useState(() => lsGetNumber('bgLightness', 75))
 
   const persist = useCallback((key: string, val: number, setter: (v: number) => void) => {
     setter(val)

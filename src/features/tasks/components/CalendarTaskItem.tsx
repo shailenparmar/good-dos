@@ -6,7 +6,7 @@ interface CalendarTaskItemProps {
   onToggle: (id: string) => void
   onCyclePriority: (id: string) => void
   onClick: (task: Task) => void
-  onPlaySound: (isSubtask: boolean) => void
+  onPlaySound: (isSubtask: boolean, priority?: number) => void
   categoryColor?: string
   isSelected?: boolean
   draggable?: boolean
@@ -28,49 +28,61 @@ export function CalendarTaskItem({ task, onToggle, onCyclePriority: _onCyclePrio
 
   return (
     <div
-      className="relative font-mono select-none flex items-center"
-      style={{
-        backgroundColor: getPriorityColor(task.priority),
-        border: `3px solid ${borderColor}`,
-        cursor: isDraggable ? 'grab' : undefined,
-      }}
+      className="flex items-stretch min-w-0"
+      style={{ gap: '0px', cursor: isDraggable ? 'grab' : undefined }}
       draggable={isDraggable}
       onDragStart={onDragStart}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
     >
-      {/* X overlay when completed */}
-      {task.completed && (
-        <svg className="absolute inset-0 w-full h-full pointer-events-none z-20" viewBox="0 0 100 100" preserveAspectRatio="none">
-          <line x1="0" y1="0" x2="100" y2="100" stroke="hsl(var(--h), var(--s), var(--l))" strokeWidth="6" />
-          <line x1="100" y1="0" x2="0" y2="100" stroke="hsl(var(--h), var(--s), var(--l))" strokeWidth="6" />
-        </svg>
-      )}
-
-      {/* Task text — click to edit */}
-      <button
-        className="relative z-10 flex-1 min-w-0 text-left truncate px-2 py-1"
+      {/* Square checkbox */}
+      <div
+        className="relative flex-shrink-0"
         style={{
-          color: 'hsl(var(--h), var(--s), var(--l))',
-          fontSize: 'clamp(11px, 1.3vw, 14px)',
-          fontWeight: isBold ? 700 : 400,
+          width: 'clamp(18px, 2.5vw, 28px)',
+          aspectRatio: '1',
+          backgroundColor: getPriorityColor(task.priority),
+          border: `3px solid ${borderColor}`,
         }}
-        onClick={() => onClick(task)}
-      >
-        {task.text || 'untitled'}
-      </button>
-
-      {/* Toggle zone — right side */}
-      <button
-        className="relative z-10 flex-shrink-0 self-stretch px-2"
-        onClick={() => {
-          if (!task.completed) onPlaySound(false)
+        onMouseDown={(e) => {
+          e.stopPropagation()
+          if (!task.completed) onPlaySound(false, task.priority)
           onToggle(task.id)
         }}
-        style={{ color: 'hsl(var(--h), var(--s), var(--l))', fontSize: 'clamp(11px, 1.3vw, 14px)' }}
       >
-        {task.completed ? '×' : '·'}
-      </button>
+        {task.completed && (
+          <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <line x1="15" y1="15" x2="85" y2="85" stroke="hsl(var(--h), var(--s), var(--l))" strokeWidth="12" strokeLinecap="butt" />
+            <line x1="85" y1="15" x2="15" y2="85" stroke="hsl(var(--h), var(--s), var(--l))" strokeWidth="12" strokeLinecap="butt" />
+          </svg>
+        )}
+      </div>
+
+      {/* Task text box */}
+      <div
+        className="flex-1 min-w-0 flex items-center"
+        style={{
+          border: `3px solid ${borderColor}`,
+          borderLeft: 'none',
+          padding: 'var(--sp-xs) var(--sp-sm)',
+        }}
+        onMouseDown={(e) => {
+          e.stopPropagation()
+          onClick(task)
+        }}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+      >
+        <span
+          className="block w-full text-left truncate font-mono"
+          style={{
+            color: 'hsl(var(--h), var(--s), var(--l))',
+            fontSize: 'clamp(11px, 1.3vw, 14px)',
+            lineHeight: '1.2',
+            fontWeight: isBold ? 700 : 400,
+          }}
+        >
+          {task.text || 'untitled'}
+        </span>
+      </div>
     </div>
   )
 }

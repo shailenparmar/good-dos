@@ -47,11 +47,11 @@ export function ThemePicker() {
   const allPresets = [...DEFAULT_PRESETS, ...customPresets]
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col" style={{ gap: 'var(--sp-md)' }}>
       {/* 2x2 color picker grid — no labels needed */}
       <div
-        className="grid gap-2"
-        style={{ gridTemplateColumns: '1fr 1fr' }}
+        className="grid"
+        style={{ gap: 'var(--sp-sm)', gridTemplateColumns: '1fr 1fr' }}
       >
         <ColorPicker type="text" part="sl" />
         <ColorPicker type="background" part="sl" />
@@ -61,8 +61,8 @@ export function ThemePicker() {
 
       {/* Presets */}
       <div
-        className="grid gap-2"
-        style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}
+        className="grid"
+        style={{ gap: 'var(--sp-sm)', gridTemplateColumns: 'repeat(5, 1fr)' }}
       >
         {allPresets.map((preset: typeof DEFAULT_PRESETS[0], i: number) => (
           <button

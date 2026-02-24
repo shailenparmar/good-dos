@@ -52,12 +52,29 @@ export function useTasks() {
   }
 
   const deleteTask = async (id: string) => {
-    // Delete subtasks too
-    const subtasks = tasks.filter(t => t.parentId === id)
-    for (const st of subtasks) {
-      await db.tasks.delete(st.id)
+    const task = tasks.find(t => t.id === id)
+    const idsToDelete = [id]
+
+    // Collect subtasks
+    idsToDelete.push(...tasks.filter(t => t.parentId === id).map(t => t.id))
+
+    // If recurring, cascade-delete all future instances in the same series
+    if (task?.recurrence && task.dueDate) {
+      const future = tasks.filter(t =>
+        t.id !== id &&
+        t.dueDate &&
+        t.dueDate >= task.dueDate! &&
+        t.text === task.text &&
+        t.parentId === task.parentId
+      )
+      for (const ft of future) {
+        idsToDelete.push(ft.id)
+        // Also collect subtasks of future instances
+        idsToDelete.push(...tasks.filter(t => t.parentId === ft.id).map(t => t.id))
+      }
     }
-    await db.tasks.delete(id)
+
+    await db.tasks.bulkDelete([...new Set(idsToDelete)])
   }
 
   const toggleComplete = async (id: string) => {

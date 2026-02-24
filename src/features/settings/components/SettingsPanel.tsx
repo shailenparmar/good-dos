@@ -5,7 +5,8 @@ import { ThemePicker } from '@features/theme/components/ThemePicker'
 import { FunctionButton } from '@shared/components/FunctionButton'
 import { APP_VERSION } from '@shared/version'
 import { lsGetNumber, lsSet } from '@shared/storage'
-import type { Category } from '@features/tasks/types'
+import { tagColor } from '@features/tasks/types'
+import type { TypeTag } from '@features/tasks/types'
 
 interface SettingsPanelProps {
   isOpen: boolean
@@ -15,16 +16,14 @@ function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8)
 }
 
-const DEFAULT_CATEGORIES: Category[] = [
-  { id: 'home', name: 'home', color: 'hsl(140, 55%, 45%)' },
-  { id: 'school', name: 'school', color: 'hsl(210, 60%, 55%)' },
-  { id: 'personal', name: 'personal', color: 'hsl(30, 80%, 55%)' },
+const DEFAULT_TYPETAGS: TypeTag[] = [
+  { id: 'work', name: 'work' },
+  { id: 'social', name: 'social' },
 ]
 
 export function SettingsPanel({ isOpen }: SettingsPanelProps) {
-  const categories = useLiveQuery(() => db.categories.toArray()) ?? []
-  const [newCatName, setNewCatName] = useState('')
-  const [newCatColor, setNewCatColor] = useState('#6b8f71')
+  const typetags = useLiveQuery(() => db.typetags.toArray()) ?? []
+  const [newTagName, setNewTagName] = useState('')
   const [weekStartsOn, setWeekStartsOnState] = useState(() => lsGetNumber('weekStartsOn', 1))
 
   const setWeekStartsOn = (val: number) => {
@@ -33,26 +32,25 @@ export function SettingsPanel({ isOpen }: SettingsPanelProps) {
   }
 
   const initDefaults = async () => {
-    for (const cat of DEFAULT_CATEGORIES) {
-      const existing = await db.categories.get(cat.id)
-      if (!existing) await db.categories.add(cat)
+    for (const tag of DEFAULT_TYPETAGS) {
+      const existing = await db.typetags.get(tag.id)
+      if (!existing) await db.typetags.add(tag)
     }
   }
 
-  const addCategory = async () => {
-    if (!newCatName.trim()) return
-    await db.categories.add({
+  const addTypetag = async () => {
+    if (!newTagName.trim()) return
+    await db.typetags.add({
       id: generateId(),
-      name: newCatName.trim().toLowerCase(),
-      color: newCatColor,
+      name: newTagName.trim().toLowerCase(),
     })
-    setNewCatName('')
+    setNewTagName('')
   }
 
-  const deleteCategory = async (id: string) => {
-    await db.categories.delete(id)
-    const tasksWithCat = await db.tasks.where('categoryId').equals(id).toArray()
-    for (const t of tasksWithCat) {
+  const deleteTypetag = async (id: string) => {
+    await db.typetags.delete(id)
+    const tasksWithTag = await db.tasks.where('categoryId').equals(id).toArray()
+    for (const t of tasksWithTag) {
       await db.tasks.update(t.id, { categoryId: undefined })
     }
   }
@@ -66,72 +64,72 @@ export function SettingsPanel({ isOpen }: SettingsPanelProps) {
       }}
     >
       <div
-        className="h-full flex flex-col p-4 overflow-y-auto scrollbar-hide"
+        className="h-full flex flex-col overflow-y-auto scrollbar-hide"
         style={{
+          padding: 'var(--sp-lg)',
           width: 'min(420px, 50vw)',
           backgroundColor: 'hsl(var(--bh), var(--bs), var(--bl))',
         }}
       >
         {/* Color picker */}
-        <section className="mb-5">
+        <section style={{ marginBottom: 'var(--sp-xl)' }}>
           <ThemePicker />
         </section>
 
         {/* Divider */}
-        <div className="h-px w-full mb-5" style={{ backgroundColor: 'hsla(var(--h), var(--s), var(--l), 0.1)' }} />
+        <div className="h-px w-full" style={{ marginBottom: 'var(--sp-xl)', backgroundColor: 'hsla(var(--h), var(--s), var(--l), 0.1)' }} />
 
-        {/* Categories */}
-        <section className="mb-5">
-          {categories.length === 0 && (
-            <div className="mb-3">
+        {/* Typetags */}
+        <section style={{ marginBottom: 'var(--sp-xl)' }}>
+          {typetags.length === 0 && (
+            <div style={{ marginBottom: 'var(--sp-md)' }}>
               <FunctionButton onClick={initDefaults} size="sm">
                 add defaults
               </FunctionButton>
             </div>
           )}
 
-          <div className="flex flex-wrap gap-2 mb-3">
-            {categories.map(cat => (
-              <button
-                key={cat.id}
-                onClick={() => deleteCategory(cat.id)}
-                className="font-mono font-black px-4 py-2 active:scale-90 uppercase"
-                style={{
-                  fontSize: 'clamp(11px, 1.3vw, 14px)',
-                  color: cat.color,
-                  border: `3px solid ${cat.color}`,
-                  backgroundColor: 'transparent',
-                }}
-                title={`remove ${cat.name}`}
-              >
-                {cat.name}
-              </button>
-            ))}
+          <div className="flex flex-wrap" style={{ gap: 'var(--sp-sm)', marginBottom: 'var(--sp-md)' }}>
+            {typetags.map((tag, i) => {
+              const color = tagColor(i)
+              return (
+                <button
+                  key={tag.id}
+                  onClick={() => deleteTypetag(tag.id)}
+                  className="font-mono font-black active:scale-90 uppercase"
+                  style={{
+                    padding: 'var(--sp-sm) var(--sp-lg)',
+                    fontSize: 'clamp(11px, 1.3vw, 14px)',
+                    color,
+                    border: `3px solid ${color}`,
+                    backgroundColor: 'transparent',
+                  }}
+                  title={`remove ${tag.name}`}
+                >
+                  {tag.name}
+                </button>
+              )
+            })}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center" style={{ gap: 'var(--sp-sm)' }}>
             <input
-              type="color"
-              value={newCatColor}
-              onChange={e => setNewCatColor(e.target.value)}
-              className="w-8 h-8 border-none bg-transparent"
-            />
-            <input
-              value={newCatName}
-              onChange={e => setNewCatName(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && addCategory()}
-              placeholder="new category"
+              value={newTagName}
+              onChange={e => setNewTagName(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && addTypetag()}
+              placeholder="new typetag"
               className="flex-1 font-mono font-black bg-transparent border-none outline-none"
               style={{
                 color: 'hsl(var(--h), var(--s), var(--l))',
                 borderBottom: '3px solid hsla(var(--h), var(--s), var(--l), 0.15)',
-                paddingBottom: '4px',
+                paddingBottom: 'var(--sp-xs)',
               }}
             />
             <button
-              onClick={addCategory}
-              className="font-mono font-black px-3 py-1"
+              onClick={addTypetag}
+              className="font-mono font-black"
               style={{
+                padding: 'var(--sp-xs) var(--sp-md)',
                 color: 'hsl(var(--h), var(--s), var(--l))',
                 border: '3px solid hsla(var(--h), var(--s), var(--l), 0.2)',
               }}
@@ -142,11 +140,11 @@ export function SettingsPanel({ isOpen }: SettingsPanelProps) {
         </section>
 
         {/* Divider */}
-        <div className="h-px w-full mb-5" style={{ backgroundColor: 'hsla(var(--h), var(--s), var(--l), 0.1)' }} />
+        <div className="h-px w-full" style={{ marginBottom: 'var(--sp-xl)', backgroundColor: 'hsla(var(--h), var(--s), var(--l), 0.1)' }} />
 
         {/* Week start */}
-        <section className="mb-5">
-          <div className="flex gap-2">
+        <section style={{ marginBottom: 'var(--sp-xl)' }}>
+          <div className="flex" style={{ gap: 'var(--sp-sm)' }}>
             <FunctionButton
               size="sm"
               fullWidth={false}
@@ -167,7 +165,7 @@ export function SettingsPanel({ isOpen }: SettingsPanelProps) {
         </section>
 
         {/* Version — bottom */}
-        <section className="mt-auto pt-4 flex-shrink-0">
+        <section className="mt-auto flex-shrink-0" style={{ paddingTop: 'var(--sp-lg)' }}>
           <p
             className="font-mono font-black"
             style={{ color: 'hsla(var(--h), var(--s), var(--l), 0.2)' }}

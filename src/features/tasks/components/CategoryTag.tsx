@@ -1,12 +1,13 @@
-import type { Category } from '../types'
+import type { TypeTag } from '../types'
 
 interface CategoryTagProps {
-  category: Category | undefined
-  categories: Category[]
+  category: TypeTag | undefined
+  categories: TypeTag[]
+  categoryColor?: string
   onSelect: (categoryId: string | undefined) => void
 }
 
-export function CategoryTag({ category, categories, onSelect }: CategoryTagProps) {
+export function CategoryTag({ category, categories, categoryColor, onSelect }: CategoryTagProps) {
   if (!category && categories.length === 0) return null
 
   return (
@@ -14,10 +15,11 @@ export function CategoryTag({ category, categories, onSelect }: CategoryTagProps
       value={category?.id ?? ''}
       onChange={e => onSelect(e.target.value || undefined)}
       onClick={e => e.stopPropagation()}
-      className="text-xs font-mono px-2 py-0.5 border-none outline-none bg-transparent flex-shrink-0"
+      className="text-xs font-mono border-none outline-none bg-transparent flex-shrink-0"
       style={{
-        color: category?.color ?? 'hsla(var(--h), var(--s), var(--l), 0.5)',
-        backgroundColor: category ? category.color + '20' : 'transparent',
+        padding: 'var(--sp-xs) var(--sp-sm)',
+        color: categoryColor ?? 'hsla(var(--h), var(--s), var(--l), 0.5)',
+        backgroundColor: 'transparent',
       }}
     >
       <option value="">—</option>

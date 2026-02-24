@@ -46,9 +46,9 @@ export function RecurrencePicker({ recurrence, dueDate, onChange }: RecurrencePi
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col" style={{ gap: 'var(--sp-md)' }}>
       {/* Frequency buttons */}
-      <div className="flex gap-2">
+      <div className="flex" style={{ gap: 'var(--sp-sm)' }}>
         {(['none', 'daily', 'weekly', 'monthly'] as const).map(f => {
           const isActive = f === 'none'
             ? !recurrence
@@ -71,7 +71,7 @@ export function RecurrencePicker({ recurrence, dueDate, onChange }: RecurrencePi
 
       {/* Day-of-week toggles for weekly/custom */}
       {(freq === 'custom' || freq === 'weekly') && (
-        <div className="flex gap-1">
+        <div className="flex" style={{ gap: 'var(--sp-xs)' }}>
           {DAY_LABELS.map((label, i) => {
             const isActive = recurrence?.daysOfWeek?.includes(i) ?? false
             return (
@@ -81,7 +81,7 @@ export function RecurrencePicker({ recurrence, dueDate, onChange }: RecurrencePi
                 fullWidth={false}
                 isActive={isActive}
                 onClick={() => toggleDay(i)}
-                style={{ minWidth: '36px', padding: '4px 0' }}
+                style={{ minWidth: '36px', padding: 'var(--sp-xs) 0' }}
               >
                 {label}
               </FunctionButton>
@@ -102,7 +102,7 @@ export function RecurrencePicker({ recurrence, dueDate, onChange }: RecurrencePi
 
       {/* End date */}
       {recurrence && (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center" style={{ gap: 'var(--sp-sm)' }}>
           <span
             className="font-mono text-xs font-bold"
             style={{ color: 'hsla(var(--h), var(--s), var(--l), 0.6)' }}

@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from 'react'
-import type { Task, Category } from '../types'
+import { tagColor } from '../types'
+import type { Task, TypeTag } from '../types'
 import { RecurrencePicker } from './RecurrencePicker'
 import { FunctionButton } from '@shared/components/FunctionButton'
 import { getRelativeDateText, isOverdue } from '@shared/utils/date'
 
 interface TaskDetailModalProps {
   task: Task
-  categories: Category[]
+  categories: TypeTag[]
   onUpdate: (id: string, changes: Partial<Task>) => void
   onDelete: (id: string) => void
   onClose: () => void
@@ -148,14 +149,14 @@ export function TaskDetailModal({ task, categories, onUpdate, onDelete, onClose 
           </div>
         </div>
 
-        {/* Category */}
+        {/* Typetag */}
         {categories.length > 0 && (
           <div className="flex flex-col gap-2">
             <span
               className="font-mono text-xs font-bold"
               style={{ color: 'hsla(var(--h), var(--s), var(--l), 0.6)' }}
             >
-              category
+              typetag
             </span>
             <div className="flex gap-2 flex-wrap">
               <FunctionButton
@@ -166,13 +167,13 @@ export function TaskDetailModal({ task, categories, onUpdate, onDelete, onClose 
               >
                 none
               </FunctionButton>
-              {categories.map(c => (
+              {categories.map((c, i) => (
                 <FunctionButton
                   key={c.id}
                   size="sm"
                   fullWidth={false}
                   isActive={task.categoryId === c.id}
-                  overrideColor={c.color}
+                  overrideColor={tagColor(i)}
                   onClick={() => onUpdate(task.id, { categoryId: c.id })}
                 >
                   {c.name}

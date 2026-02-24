@@ -12,7 +12,7 @@ interface WeekViewProps {
   onCyclePriority: (id: string) => void
   onTaskClick: (task: Task) => void
   onDayEmptyClick: (dateStr: string) => void
-  onPlaySound: (isSubtask: boolean) => void
+  onPlaySound: (isSubtask: boolean, priority?: number) => void
   highlightedDates?: Set<string>
   activeHighlight?: string | null
   lockedDate?: string | null

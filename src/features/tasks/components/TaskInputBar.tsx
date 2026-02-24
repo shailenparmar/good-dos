@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
-import { toDateString, formatCalendarDay } from '@shared/utils/date'
+import { toDateString, formatCalendarDay, fuzzyMatch } from '@shared/utils/date'
 
 type Step = 'date' | 'name' | 'priority'
 
@@ -57,15 +57,17 @@ interface TaskInputBarProps {
   monthDates?: DateOption[]
   monthTitle?: string
   onSettings?: () => void
+  colorsOpen?: boolean
   onPrev?: () => void
   onNext?: () => void
   viewMode?: 'week' | 'month'
   onViewChange?: (mode: 'week' | 'month') => void
   onToday?: () => void
   flashMessage?: string | null
+  onEscape?: () => void
 }
 
-export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDateFilterChange, onLockedDateChange, resetKey, monthDates, monthTitle, onSettings, onPrev, onNext, viewMode, onViewChange, onToday, flashMessage }: TaskInputBarProps) {
+export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDateFilterChange, onLockedDateChange, resetKey, monthDates, monthTitle, onSettings, colorsOpen, onPrev, onNext, viewMode, onViewChange, onToday, flashMessage, onEscape }: TaskInputBarProps) {
   const [step, setStep] = useState<Step>('date')
   const [inputValue, setInputValue] = useState('')
   const [highlightIndex, setHighlightIndex] = useState(0)
@@ -87,50 +89,57 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
 
   const onPrevRef = useRef(onPrev)
   const onNextRef = useRef(onNext)
-
   useEffect(() => { stepRef.current = step }, [step])
   useEffect(() => { isActiveRef.current = isActive }, [isActive])
   useEffect(() => { allDateOptionsRef.current = allDateOptions }, [allDateOptions])
   useEffect(() => { onPrevRef.current = onPrev }, [onPrev])
   useEffect(() => { onNextRef.current = onNext }, [onNext])
 
-  // Filter dates by typed input
+  // Filter dates by typed input (fuzzy: "f" → friday, "wednesday" → wed, "tu2" → tue 2x)
   const filteredDateOptions = useMemo(() => {
-    const q = inputValue.toLowerCase().trim()
+    const q = inputValue.trim()
     if (!q) return allDateOptions
-    return allDateOptions.filter(o => o.label.toLowerCase().includes(q))
+    return allDateOptions.filter(o => fuzzyMatch(q, o.label))
   }, [allDateOptions, inputValue])
 
   // Type anywhere to auto-focus input; intercept Tab globally for date cycling
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      // Tab in date step — must capture globally before browser moves focus
-      if (e.key === 'Tab' && stepRef.current === 'date') {
+      // Tab — ALWAYS intercept for day cycling, regardless of step or focus
+      if (e.key === 'Tab') {
         e.preventDefault()
-        const opts = allDateOptionsRef.current
-        if (opts.length === 0) return
+
+        // If not in date step, reset to date step first
+        if (stepRef.current !== 'date') {
+          setStep('date')
+          setInputValue('')
+          setHighlightIndex(0)
+          setLockedDate(null)
+          setLockedDateLabel(null)
+          setLockedName(null)
+        }
+
         setIsActive(true)
         const backward = e.shiftKey
+        const opts = allDateOptionsRef.current
+        if (opts.length === 0) return
+
         setTabbedDateIndex(prev => {
-          // First tab → jump to today (or first/last if today not in list)
+          // No selection → today if visible, otherwise first of the month
           if (prev === null) {
             const todayStr = new Date().toISOString().slice(0, 10)
             const todayIdx = opts.findIndex(o => o.value === todayStr)
-            if (todayIdx >= 0) return todayIdx
-            return backward ? opts.length - 1 : 0
+            return todayIdx >= 0 ? todayIdx : 0
           }
+          // Cycle to next/prev consecutive day
           const next = prev + (backward ? -1 : 1)
-          // Past the end → advance to next period, land on first day
           if (next >= opts.length) {
             onNextRef.current?.()
-            // After React processes the month change, set index to 0
             requestAnimationFrame(() => setTabbedDateIndex(0))
             return prev
           }
-          // Before the start → go to previous period, land on last day
           if (next < 0) {
             onPrevRef.current?.()
-            // After React processes the month change, set index to last
             requestAnimationFrame(() => {
               const newOpts = allDateOptionsRef.current
               setTabbedDateIndex(newOpts.length - 1)
@@ -251,9 +260,24 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
       e.preventDefault()
-      e.stopPropagation()
+      // Progressive unwind: priority → name → date → blur (let CalendarView handle the rest)
+      if (step === 'priority') {
+        setLockedName(null)
+        setStep('name')
+        setInputValue('')
+        return
+      }
+      if (step === 'name') {
+        setLockedDate(null)
+        setLockedDateLabel(null)
+        setStep('date')
+        setInputValue('')
+        return
+      }
+      // In date step — reset, blur, and tell CalendarView to continue unwinding
       reset()
       inputRef.current?.blur()
+      onEscape?.()
       return
     }
 
@@ -325,13 +349,13 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
   }
 
   const placeholder = step === 'date'
-    ? 'day...'
+    ? 'type a day'
     : step === 'name'
       ? 'task...'
       : 'none / yellow / red'
 
   // Border color reflects current state
-  let borderColor = 'hsla(var(--h), var(--s), var(--l), 0.3)'
+  let borderColor = 'hsla(var(--h), var(--s), var(--l), 0.2)'
   if (step === 'priority' && matchedPriority) {
     borderColor = matchedPriority.color
   } else if (isActive) {
@@ -340,7 +364,7 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
 
   return (
     <div className="flex-shrink-0">
-      <div className="flex items-stretch px-3 py-1.5 gap-2">
+      <div className="flex items-stretch" style={{ padding: 'var(--sp-sm) var(--sp-md)', gap: 'var(--sp-sm)' }}>
         {/* LEFT — month+day / year stacked, arrows alongside, full height */}
         {onPrev && onNext && (
           <div className="flex-shrink-0 flex items-stretch gap-0">
@@ -351,8 +375,8 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
                 fontSize: 'clamp(22px, 3vw, 36px)',
                 color: 'hsl(var(--h), var(--s), var(--l))',
                 backgroundColor: 'hsla(var(--h), var(--s), var(--l), 0.08)',
-                border: '3px solid hsla(var(--h), var(--s), var(--l), 0.3)',
-                padding: '0 clamp(4px, 0.8vw, 12px)',
+                border: '3px solid hsla(var(--h), var(--s), var(--l), 0.2)',
+                padding: '0 var(--sp-md-r)',
               }}
             >
               ‹
@@ -362,9 +386,9 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
               className="font-mono font-black flex flex-col items-center justify-center uppercase active:scale-90"
               style={{
                 color: 'hsl(var(--h), var(--s), var(--l))',
-                padding: '0 clamp(4px, 0.8vw, 10px)',
+                padding: '0 var(--sp-sm-r)',
                 lineHeight: 1.1,
-                border: '3px solid hsla(var(--h), var(--s), var(--l), 0.3)',
+                border: '3px solid hsla(var(--h), var(--s), var(--l), 0.2)',
               }}
             >
               <span style={{ fontSize: 'clamp(13px, 1.8vw, 20px)' }}>
@@ -381,8 +405,8 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
                 fontSize: 'clamp(22px, 3vw, 36px)',
                 color: 'hsl(var(--h), var(--s), var(--l))',
                 backgroundColor: 'hsla(var(--h), var(--s), var(--l), 0.08)',
-                border: '3px solid hsla(var(--h), var(--s), var(--l), 0.3)',
-                padding: '0 clamp(4px, 0.8vw, 12px)',
+                border: '3px solid hsla(var(--h), var(--s), var(--l), 0.2)',
+                padding: '0 var(--sp-md-r)',
               }}
             >
               ›
@@ -397,7 +421,7 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
             <div
               className="flex-shrink-0 flex items-center justify-center font-mono font-black uppercase"
               style={{
-                padding: '0 clamp(8px, 1.2vw, 16px)',
+                padding: '0 var(--sp-lg-r)',
                 color: 'hsl(var(--h), var(--s), var(--l))',
                 border: '6px solid hsla(var(--h), var(--s), var(--l), 0.5)',
                 backgroundColor: 'hsla(var(--h), var(--s), var(--l), 0.1)',
@@ -412,7 +436,7 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
           <div
             className="flex-shrink-0 flex items-center justify-center font-mono font-black truncate"
             style={{
-              padding: '0 clamp(8px, 1.2vw, 16px)',
+              padding: '0 var(--sp-lg-r)',
               maxWidth: 'clamp(100px, 18vw, 200px)',
               color: 'hsl(var(--h), var(--s), var(--l))',
               fontSize: 'clamp(13px, 1.8vw, 20px)',
@@ -433,7 +457,7 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
                 color: 'hsl(var(--h), var(--s), var(--l))',
                 fontSize: 'clamp(22px, 3vw, 36px)',
                 border: '12px solid hsl(var(--h), var(--s), var(--l))',
-                padding: 'clamp(6px, 1vw, 12px)',
+                padding: 'var(--sp-md-r)',
               }}
             >
               {flashMessage}
@@ -460,7 +484,7 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
                 caretColor: 'hsl(var(--h), var(--s), var(--l))',
                 fontSize: 'clamp(22px, 3vw, 36px)',
                 border: `12px solid ${borderColor}`,
-                padding: 'clamp(6px, 1vw, 12px)',
+                padding: 'var(--sp-md-r)',
               }}
             />
           )}
@@ -476,8 +500,8 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
                 style={{
                   color: 'hsl(var(--h), var(--s), var(--l))',
                   fontSize: 'clamp(13px, 1.8vw, 20px)',
-                  border: `${viewMode === 'week' ? '6px' : '3px'} solid hsla(var(--h), var(--s), var(--l), ${viewMode === 'week' ? 1 : 0.2})`,
-                  padding: '0 clamp(4px, 0.8vw, 8px)',
+                  border: `${viewMode === 'week' ? '6px' : '3px'} solid hsla(var(--h), var(--s), var(--l), ${viewMode === 'week' ? 0.7 : 0.2})`,
+                  padding: '0 var(--sp-sm-r)',
                 }}
               >
                 week
@@ -488,8 +512,8 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
                 style={{
                   color: 'hsl(var(--h), var(--s), var(--l))',
                   fontSize: 'clamp(13px, 1.8vw, 20px)',
-                  border: `${viewMode === 'month' ? '6px' : '3px'} solid hsla(var(--h), var(--s), var(--l), ${viewMode === 'month' ? 1 : 0.2})`,
-                  padding: '0 clamp(4px, 0.8vw, 8px)',
+                  border: `${viewMode === 'month' ? '6px' : '3px'} solid hsla(var(--h), var(--s), var(--l), ${viewMode === 'month' ? 0.7 : 0.2})`,
+                  padding: '0 var(--sp-sm-r)',
                 }}
               >
                 month
@@ -503,8 +527,8 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
               style={{
                 color: 'hsl(var(--h), var(--s), var(--l))',
                 fontSize: 'clamp(13px, 1.8vw, 20px)',
-                border: '3px solid hsla(var(--h), var(--s), var(--l), 0.2)',
-                padding: '0 clamp(4px, 0.8vw, 8px)',
+                border: `${colorsOpen ? '6px' : '3px'} solid hsla(var(--h), var(--s), var(--l), ${colorsOpen ? 0.7 : 0.2})`,
+                padding: '0 var(--sp-sm-r)',
               }}
             >
               colors

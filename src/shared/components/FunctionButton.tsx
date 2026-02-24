@@ -29,8 +29,10 @@ export function FunctionButton({
 
   return (
     <button
-      className={`${fullWidth ? 'w-full' : ''} px-4 py-2 font-mono font-black flex items-center justify-center gap-2 outline-none focus:outline-none select-none uppercase active:scale-90 ${disabled && !overrideColor ? 'opacity-40' : ''} ${className}`}
+      className={`${fullWidth ? 'w-full' : ''} font-mono font-black flex items-center justify-center outline-none focus:outline-none select-none uppercase active:scale-90 ${disabled && !overrideColor ? 'opacity-40' : ''} ${className}`}
       style={{
+        padding: 'var(--sp-sm) var(--sp-lg)',
+        gap: 'var(--sp-sm)',
         color: textColor,
         backgroundColor: bgColor,
         border: `${isActive ? '6px' : '3px'} solid ${borderColor}`,

@@ -1,5 +1,19 @@
 @import "tailwindcss";
 
+/* Spacing system — 5 tiers, multiples of 3 */
+:root {
+  --sp-xs: 3px;
+  --sp-sm: 6px;
+  --sp-md: 12px;
+  --sp-lg: 18px;
+  --sp-xl: 24px;
+  --sp-xs-r: clamp(2px, 0.4vw, 4px);
+  --sp-sm-r: clamp(4px, 0.8vw, 8px);
+  --sp-md-r: clamp(6px, 1vw, 12px);
+  --sp-lg-r: clamp(8px, 1.2vw, 18px);
+  --sp-xl-r: clamp(12px, 2vw, 24px);
+}
+
 /* Base */
 html, body {
   margin: 0;
@@ -27,6 +41,12 @@ html, body {
 }
 input, textarea, [contenteditable="true"] {
   cursor: text !important;
+}
+
+/* Placeholder — match 0.2 opacity tier */
+::placeholder {
+  color: hsla(var(--h), var(--s), var(--l), 0.2) !important;
+  opacity: 1 !important;
 }
 
 /* Button resets */

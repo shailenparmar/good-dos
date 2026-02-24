@@ -21,8 +21,20 @@ export interface Task {
   updatedAt: number
 }
 
-export interface Category {
+export interface TypeTag {
   id: string
   name: string
-  color: string
+}
+
+const TAG_COLORS = [
+  'hsl(210, 70%, 55%)',  // blue
+  'hsl(150, 60%, 45%)',  // green
+  'hsl(270, 60%, 55%)',  // purple
+  'hsl(180, 60%, 45%)',  // teal
+  'hsl(320, 60%, 55%)',  // pink
+  'hsl(240, 55%, 55%)',  // indigo
+]
+
+export function tagColor(index: number): string {
+  return TAG_COLORS[index % TAG_COLORS.length]
 }

@@ -1,10 +1,10 @@
-import type { Task, Category } from '../types'
+import type { Task, TypeTag } from '../types'
 import { TaskItem } from './TaskItem'
 
 interface SubtaskListProps {
   parentId: string
   subtasks: Task[]
-  categories: Category[]
+  categories: TypeTag[]
   onToggle: (id: string) => void
   onUpdate: (id: string, changes: Partial<Task>) => void
   onDelete: (id: string) => void

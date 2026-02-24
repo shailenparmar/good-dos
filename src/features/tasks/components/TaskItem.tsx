@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import type { Task, Category } from '../types'
+import type { Task, TypeTag } from '../types'
 import { PriorityIndicator } from './PriorityIndicator'
 import { CategoryTag } from './CategoryTag'
 import { DueDatePicker } from './DueDatePicker'
@@ -10,7 +10,7 @@ import { SubtaskList } from './SubtaskList'
 interface TaskItemProps {
   task: Task
   subtasks: Task[]
-  categories: Category[]
+  categories: TypeTag[]
   isSubtask?: boolean
   onToggle: (id: string) => void
   onUpdate: (id: string, changes: Partial<Task>) => void
