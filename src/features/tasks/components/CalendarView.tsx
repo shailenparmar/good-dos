@@ -31,6 +31,7 @@ export function CalendarView({ settingsOpen, onCloseSettings }: CalendarViewProp
     cyclePriority,
     moveTaskToDate,
     deleteTask,
+    removeRecurrence,
   } = useTasks()
 
   const typetags = useLiveQuery(() => db.typetags.toArray()) ?? []
@@ -285,6 +286,7 @@ export function CalendarView({ settingsOpen, onCloseSettings }: CalendarViewProp
           typetags={typetags}
           onUpdate={updateTask}
           onDelete={async (id) => { await deleteTask(id); setSelectedTask(null) }}
+          onRemoveRecurrence={removeRecurrence}
           onClose={() => setSelectedTask(null)}
         />
       )}

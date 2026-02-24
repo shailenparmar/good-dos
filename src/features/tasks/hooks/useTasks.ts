@@ -20,7 +20,7 @@ export function useTasks() {
 
   const getTasksForDate = (dateStr: string): Task[] =>
     tasks
-      .filter(t => t.parentId === '' && t.dueDate === dateStr)
+      .filter(t => t.dueDate === dateStr && (t.parentId === '' || t.recurrence))
       .sort((a, b) => a.sortOrder - b.sortOrder)
 
   const getUnscheduledTasks = (): Task[] =>
@@ -55,26 +55,44 @@ export function useTasks() {
     const task = tasks.find(t => t.id === id)
     const idsToDelete = [id]
 
-    // Collect subtasks
+    // Collect children (subtasks or recurring instances)
     idsToDelete.push(...tasks.filter(t => t.parentId === id).map(t => t.id))
 
-    // If recurring, cascade-delete all future instances in the same series
-    if (task?.recurrence && task.dueDate) {
-      const future = tasks.filter(t =>
+    // If this is a recurring instance (child of original), cascade-delete future siblings
+    if (task?.recurrence && task.parentId !== '' && task.dueDate) {
+      const futureSiblings = tasks.filter(t =>
         t.id !== id &&
+        t.parentId === task.parentId &&
         t.dueDate &&
-        t.dueDate >= task.dueDate! &&
-        t.text === task.text &&
-        t.parentId === task.parentId
+        t.dueDate >= task.dueDate!
       )
-      for (const ft of future) {
-        idsToDelete.push(ft.id)
-        // Also collect subtasks of future instances
-        idsToDelete.push(...tasks.filter(t => t.parentId === ft.id).map(t => t.id))
-      }
+      idsToDelete.push(...futureSiblings.map(t => t.id))
     }
 
     await db.tasks.bulkDelete([...new Set(idsToDelete)])
+  }
+
+  const removeRecurrence = async (id: string) => {
+    const task = tasks.find(t => t.id === id)
+    if (!task) return
+    const series = tasks.filter(t =>
+      t.id !== id &&
+      t.text === task.text &&
+      t.parentId === task.parentId
+    )
+    const earlier = series.filter(t => t.dueDate && task.dueDate && t.dueDate <= task.dueDate!)
+    const future = series.filter(t => t.dueDate && task.dueDate && t.dueDate > task.dueDate!)
+    // Single transaction — live query only fires once when all done
+    await db.transaction('rw', db.tasks, async () => {
+      const now = Date.now()
+      await db.tasks.update(id, { recurrence: undefined, updatedAt: now })
+      for (const t of earlier) {
+        await db.tasks.update(t.id, { recurrence: undefined, updatedAt: now })
+      }
+      if (future.length > 0) {
+        await db.tasks.bulkDelete(future.map(t => t.id))
+      }
+    })
   }
 
   const toggleComplete = async (id: string) => {
@@ -146,5 +164,6 @@ export function useTasks() {
     indentTask,
     unindentTask,
     moveTaskToDate,
+    removeRecurrence,
   }
 }

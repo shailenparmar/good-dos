@@ -16,40 +16,24 @@ export function useRecurring(tasks: Task[]) {
     horizon.setHours(0, 0, 0, 0)
     horizon.setDate(horizon.getDate() + HORIZON_DAYS)
 
-    // Group tasks by recurrence "series" — same text + parentId
-    // Find all recurring tasks (completed or not)
-    const recurringTasks = tasks.filter(t => t.recurrence && t.dueDate)
-    if (recurringTasks.length === 0) return
+    // Find original recurring tasks (top-level with recurrence)
+    const originals = tasks.filter(t => t.recurrence && t.dueDate && t.parentId === '')
+    if (originals.length === 0) return
 
-    // Group by series key (text + parentId)
-    const seriesMap = new Map<string, Task[]>()
-    for (const t of tasks) {
-      if (!t.dueDate) continue
-      const key = `${t.text}\0${t.parentId}`
-      const list = seriesMap.get(key) ?? []
-      list.push(t)
-      seriesMap.set(key, list)
-    }
-
-    // For each series that has recurrence, find the latest due date and fill forward
     const toAdd: Omit<Task, 'id'>[] = []
-    const seen = new Set<string>() // track series we've already processed
 
-    for (const task of recurringTasks) {
-      const key = `${task.text}\0${task.parentId}`
-      if (seen.has(key)) continue
-      seen.add(key)
+    for (const original of originals) {
+      // Children = generated instances of this recurring task
+      const children = tasks.filter(t => t.parentId === original.id && t.dueDate)
+      const existingDates = new Set([original.dueDate!, ...children.map(t => t.dueDate!)])
 
-      const series = seriesMap.get(key) ?? []
-      const existingDates = new Set(series.map(t => t.dueDate!))
+      // Find the latest date in the series
+      let latestDate = original.dueDate!
+      for (const child of children) {
+        if (child.dueDate! > latestDate) latestDate = child.dueDate!
+      }
 
-      // Find the latest date in this series
-      const latestDate = series.reduce((max, t) => {
-        return t.dueDate! > max ? t.dueDate! : max
-      }, series[0].dueDate!)
-
-      // Use recurrence from any task in the series that has it
-      const recurrence = task.recurrence!
+      const recurrence = original.recurrence!
 
       // Generate forward from the latest date until horizon
       let cursor = new Date(latestDate + 'T00:00:00')
@@ -64,8 +48,6 @@ export function useRecurring(tasks: Task[]) {
         )
 
         if (next > horizon) break
-
-        // Check end date
         if (recurrence.endDate && next > new Date(recurrence.endDate + 'T00:00:00')) break
 
         const dateStr = toDateString(next)
@@ -73,14 +55,14 @@ export function useRecurring(tasks: Task[]) {
           existingDates.add(dateStr)
           const now = Date.now()
           toAdd.push({
-            text: task.text,
+            text: original.text,
             completed: false,
-            priority: task.priority,
-            categoryId: task.categoryId,
+            priority: original.priority,
+            categoryId: original.categoryId,
             dueDate: dateStr,
-            parentId: task.parentId,
+            parentId: original.id,
             recurrence,
-            sortOrder: task.sortOrder,
+            sortOrder: original.sortOrder,
             createdAt: now,
             updatedAt: now,
           })

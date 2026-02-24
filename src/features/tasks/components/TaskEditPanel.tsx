@@ -8,6 +8,7 @@ interface TaskEditPanelProps {
   typetags: TypeTag[]
   onUpdate: (id: string, changes: Partial<Task>) => void
   onDelete: (id: string) => void
+  onRemoveRecurrence: (id: string) => void
   onClose: () => void
 }
 
@@ -24,7 +25,7 @@ function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8)
 }
 
-export function TaskEditPanel({ task, typetags, onUpdate, onDelete, onClose }: TaskEditPanelProps) {
+export function TaskEditPanel({ task, typetags, onUpdate, onDelete, onRemoveRecurrence, onClose }: TaskEditPanelProps) {
   const [text, setText] = useState(task.text)
   const [showRepeat, setShowRepeat] = useState(!!task.recurrence)
   const [addingTag, setAddingTag] = useState(false)
@@ -103,8 +104,9 @@ export function TaskEditPanel({ task, typetags, onUpdate, onDelete, onClose }: T
   const isCustomWeekly = freq === 'custom' || freq === 'weekly'
 
   const setFrequency = (f: typeof FREQ_OPTIONS[number]) => {
-    if (f === 'none') {
-      onUpdate(task.id, { recurrence: undefined })
+    // Toggle off: clicking active frequency or 'none' removes recurrence + children
+    if (f === 'none' || f === activeFreq) {
+      onRemoveRecurrence(task.id)
       return
     }
     const base: RecurrenceRule = { frequency: f, interval: 1 }
@@ -116,6 +118,8 @@ export function TaskEditPanel({ task, typetags, onUpdate, onDelete, onClose }: T
     if (f === 'monthly' && task.dueDate) {
       base.dayOfMonth = new Date(task.dueDate + 'T00:00:00').getDate()
     }
+    // Changing frequency — remove old children first, then set new recurrence
+    onRemoveRecurrence(task.id)
     onUpdate(task.id, { recurrence: base })
   }
 

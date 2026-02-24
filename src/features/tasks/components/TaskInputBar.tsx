@@ -86,12 +86,13 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
 
   const allDateOptions = useMemo(() => monthDates ?? dateOptions, [monthDates, dateOptions])
   const allDateOptionsRef = useRef(allDateOptions)
+  allDateOptionsRef.current = allDateOptions
 
   const onPrevRef = useRef(onPrev)
   const onNextRef = useRef(onNext)
   useEffect(() => { stepRef.current = step }, [step])
   useEffect(() => { isActiveRef.current = isActive }, [isActive])
-  useEffect(() => { allDateOptionsRef.current = allDateOptions }, [allDateOptions])
+  // allDateOptionsRef updated synchronously above (not via effect) to avoid stale reads
   useEffect(() => { onPrevRef.current = onPrev }, [onPrev])
   useEffect(() => { onNextRef.current = onNext }, [onNext])
 
