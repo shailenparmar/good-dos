@@ -127,7 +127,7 @@ export function TaskItem({
           className="w-11 h-11 flex items-center justify-center flex-shrink-0"
         >
           <div
-            className={`w-6 h-6 rounded flex items-center justify-center transition-transform ${checkAnim ? 'scale-105' : 'scale-100'}`}
+            className={`w-6 h-6 flex items-center justify-center ${checkAnim ? 'scale-105' : 'scale-100'}`}
             style={{
               border: `3px solid ${task.completed ? 'hsla(var(--h), var(--s), var(--l), 0.3)' : 'hsla(var(--h), var(--s), var(--l), 0.6)'}`,
               backgroundColor: task.completed ? 'hsla(var(--h), var(--s), var(--l), 0.15)' : 'transparent',
@@ -187,7 +187,7 @@ export function TaskItem({
 
         {/* Date picker trigger (hidden, shows on hover/focus) */}
         {!task.dueDate && (
-          <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="opacity-0 group-hover:opacity-100">
             <DueDatePicker
               dueDate={task.dueDate}
               onChange={date => onUpdate(task.id, { dueDate: date })}

@@ -28,7 +28,6 @@ function getPriorityColor(priority: number): string {
 }
 
 export function MonthDayCell({ date, dateStr, tasks, isToday, isCurrentMonth, filterMatch = 'none', isActiveHighlight, isLockedDate, onClick, onToggle, onTaskClick, onPlaySound }: MonthDayCellProps) {
-  const [isHovered, setIsHovered] = useState(false)
   const [boomId, setBoomId] = useState<string | null>(null)
   const [boomMsg, setBoomMsg] = useState('')
 
@@ -36,7 +35,6 @@ export function MonthDayCell({ date, dateStr, tasks, isToday, isCurrentMonth, fi
   const incompleteTasks = tasks.filter(t => !t.completed || t.id === boomId)
   const completedTasks = tasks.filter(t => t.completed && t.id !== boomId)
   const allTasks = [...incompleteTasks, ...completedTasks]
-  const hasTasks = incompleteTasks.length > 0
 
   useEffect(() => {
     if (!boomId) return
@@ -45,38 +43,28 @@ export function MonthDayCell({ date, dateStr, tasks, isToday, isCurrentMonth, fi
   }, [boomId])
 
   // ── Background ──
-  let bgColor = 'hsla(var(--h), var(--s), var(--l), 0.015)'
+  let bgColor = 'transparent'
   if (isLockedDate) {
-    bgColor = 'hsla(var(--h), var(--s), var(--l), 0.3)'
+    bgColor = 'hsla(var(--h), var(--s), var(--l), 0.2)'
   } else if (filterMatch === 'match') {
     bgColor = isActiveHighlight
-      ? 'hsla(var(--h), var(--s), var(--l), 0.3)'
-      : 'hsla(var(--h), var(--s), var(--l), 0.15)'
-  } else if (hasTasks) {
-    bgColor = isHovered
-      ? 'hsla(var(--h), var(--s), var(--l), 0.14)'
-      : isToday
-        ? 'hsla(var(--h), var(--s), calc(var(--l) + 4%), 0.18)'
-        : 'hsla(var(--h), var(--s), var(--l), 0.07)'
-  } else if (isToday) {
-    bgColor = isHovered
-      ? 'hsla(var(--h), var(--s), calc(var(--l) + 4%), 0.16)'
-      : 'hsla(var(--h), var(--s), calc(var(--l) + 4%), 0.10)'
-  } else if (isHovered) {
-    bgColor = 'hsla(var(--h), var(--s), var(--l), 0.05)'
+      ? 'hsla(var(--h), var(--s), var(--l), 0.2)'
+      : 'hsla(var(--h), var(--s), var(--l), 0.1)'
   }
 
   // ── Opacity ──
   const cellOpacity = isCurrentMonth ? 1 : 0.12
 
-  // ── Border — BOX the matches, DOUBLE-BOX the leader ──
-  let borderStyle = '3px solid transparent'
+  // ── Highlight — inset box-shadow so grid borders stay consistent ──
+  let highlightShadow = 'none'
   if (isLockedDate) {
-    borderStyle = '12px solid hsl(var(--h), var(--s), var(--l))'
+    highlightShadow = 'inset 0 0 0 12px hsl(var(--h), var(--s), var(--l))'
   } else if (filterMatch === 'match' && isActiveHighlight) {
-    borderStyle = '12px solid hsl(var(--h), var(--s), var(--l))'
+    highlightShadow = 'inset 0 0 0 12px hsl(var(--h), var(--s), var(--l))'
   } else if (filterMatch === 'match') {
-    borderStyle = '6px solid hsla(var(--h), var(--s), var(--l), 0.6)'
+    highlightShadow = 'inset 0 0 0 6px hsla(var(--h), var(--s), var(--l), 0.6)'
+  } else if (isToday) {
+    highlightShadow = 'inset 0 0 0 3px hsla(var(--h), var(--s), var(--l), 0.2)'
   }
 
   const handleSmack = (task: Task, e: React.MouseEvent) => {
@@ -89,17 +77,15 @@ export function MonthDayCell({ date, dateStr, tasks, isToday, isCurrentMonth, fi
 
   return (
     <div
-      className="relative overflow-hidden cursor-pointer rounded-none"
+      className="relative overflow-hidden cursor-pointer"
       style={{
         opacity: cellOpacity,
         backgroundColor: bgColor,
-        border: borderStyle,
         borderRight: '3px solid hsla(var(--h), var(--s), var(--l), 0.08)',
         borderBottom: '3px solid hsla(var(--h), var(--s), var(--l), 0.08)',
+        boxShadow: highlightShadow,
       }}
       onClick={() => onClick(dateStr)}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
     >
       {/* Day number / TODAY — HUGE, centered, background layer */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">

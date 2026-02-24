@@ -79,14 +79,7 @@ export function DayColumn({
       {/* Empty space — click target */}
       <button
         className="flex-1 min-h-[40px] w-full cursor-pointer"
-        style={{ backgroundColor: 'transparent' }}
         onClick={() => onEmptyClick(dateStr)}
-        onMouseEnter={e => {
-          e.currentTarget.style.backgroundColor = 'hsla(var(--h), var(--s), 50%, 0.05)'
-        }}
-        onMouseLeave={e => {
-          e.currentTarget.style.backgroundColor = 'transparent'
-        }}
         aria-label={`Add task to ${dayName} ${dayNum}`}
       />
     </div>

@@ -72,7 +72,7 @@ export function ThemePicker() {
               e.preventDefault()
               deleteCustom(i - DEFAULT_PRESETS.length)
             } : undefined}
-            className="aspect-square rounded font-mono font-black flex items-center justify-center uppercase"
+            className="aspect-square font-mono font-black flex items-center justify-center uppercase"
             style={{
               backgroundColor: `hsl(${preset.bgHue}, ${preset.bgSat}%, ${preset.bgLight}%)`,
               border: `3px solid hsl(${preset.hue}, ${preset.sat}%, ${preset.light}%)`,
@@ -85,7 +85,7 @@ export function ThemePicker() {
 
         <button
           onClick={randomize}
-          className="aspect-square rounded font-mono font-black flex items-center justify-center uppercase"
+          className="aspect-square font-mono font-black flex items-center justify-center uppercase"
           style={{
             border: '3px solid hsla(var(--h), var(--s), var(--l), 0.25)',
             color: 'hsl(var(--h), var(--s), var(--l))',
@@ -96,7 +96,7 @@ export function ThemePicker() {
 
         <button
           onClick={savePreset}
-          className="aspect-square rounded font-mono font-black flex items-center justify-center uppercase"
+          className="aspect-square font-mono font-black flex items-center justify-center uppercase"
           style={{
             border: '3px solid hsla(var(--h), var(--s), var(--l), 0.25)',
             color: 'hsl(var(--h), var(--s), var(--l))',

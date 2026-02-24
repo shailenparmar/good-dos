@@ -34,7 +34,7 @@ export function TaskInput({ onAdd, inputRef: externalRef }: TaskInputProps) {
       <div className="w-6" />
       <div className="w-11 h-11 flex items-center justify-center flex-shrink-0">
         <div
-          className="w-6 h-6 rounded flex items-center justify-center font-mono text-sm"
+          className="w-6 h-6 flex items-center justify-center font-mono text-sm"
           style={{
             border: '3px solid hsla(var(--h), var(--s), var(--l), 0.2)',
             color: 'hsla(var(--h), var(--s), var(--l), 0.3)',

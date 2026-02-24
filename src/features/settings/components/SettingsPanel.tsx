@@ -63,7 +63,6 @@ export function SettingsPanel({ isOpen }: SettingsPanelProps) {
       style={{
         width: isOpen ? 'min(420px, 50vw)' : '0px',
         borderLeft: isOpen ? '3px solid hsl(var(--h), var(--s), var(--l))' : '0px solid transparent',
-        transition: 'width 250ms ease, border-left 250ms ease',
       }}
     >
       <div
@@ -96,7 +95,7 @@ export function SettingsPanel({ isOpen }: SettingsPanelProps) {
               <button
                 key={cat.id}
                 onClick={() => deleteCategory(cat.id)}
-                className="font-mono font-black px-4 py-2 rounded-sm active:scale-90 uppercase"
+                className="font-mono font-black px-4 py-2 active:scale-90 uppercase"
                 style={{
                   fontSize: 'clamp(11px, 1.3vw, 14px)',
                   color: cat.color,
@@ -115,7 +114,7 @@ export function SettingsPanel({ isOpen }: SettingsPanelProps) {
               type="color"
               value={newCatColor}
               onChange={e => setNewCatColor(e.target.value)}
-              className="w-8 h-8 rounded cursor-pointer border-none bg-transparent"
+              className="w-8 h-8 cursor-pointer border-none bg-transparent"
             />
             <input
               value={newCatName}
@@ -131,7 +130,7 @@ export function SettingsPanel({ isOpen }: SettingsPanelProps) {
             />
             <button
               onClick={addCategory}
-              className="font-mono font-black px-3 py-1 rounded-sm"
+              className="font-mono font-black px-3 py-1"
               style={{
                 color: 'hsl(var(--h), var(--s), var(--l))',
                 border: '3px solid hsla(var(--h), var(--s), var(--l), 0.2)',

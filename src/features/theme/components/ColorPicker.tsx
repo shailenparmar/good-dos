@@ -136,7 +136,7 @@ export function ColorPicker({ type, part }: ColorPickerProps) {
         ref={pickerRef}
         onMouseDown={handleMouseDown}
         onTouchStart={handleTouchStart}
-        className="relative rounded"
+        className="relative"
         style={{
           width: '100%',
           height: '100%',
@@ -165,7 +165,6 @@ export function ColorPicker({ type, part }: ColorPickerProps) {
             width: `${needleWidth}px`,
             transform: 'translateX(-50%)',
             backgroundColor: 'rgba(255, 255, 255, 0.5)',
-            transition: isDragging ? 'none' : 'left 30ms linear',
           }}
         />
       </div>
@@ -177,7 +176,7 @@ export function ColorPicker({ type, part }: ColorPickerProps) {
       ref={pickerRef}
       onMouseDown={handleMouseDown}
       onTouchStart={handleTouchStart}
-      className="relative rounded"
+      className="relative"
       style={{
         width: '100%',
         height: '100%',
@@ -199,7 +198,7 @@ export function ColorPicker({ type, part }: ColorPickerProps) {
         {label}
       </div>
       <div
-        className="absolute rounded-full pointer-events-none"
+        className="absolute pointer-events-none"
         style={{
           width: `${dotSize}px`,
           height: `${dotSize}px`,
@@ -207,8 +206,6 @@ export function ColorPicker({ type, part }: ColorPickerProps) {
           top: dotTop,
           transform: 'translate(-50%, -50%)',
           backgroundColor: isText ? getBgColor() : getColor(),
-          opacity: 0.5,
-          transition: isDragging ? 'none' : 'left 30ms linear, top 30ms linear',
         }}
       />
     </div>

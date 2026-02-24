@@ -40,7 +40,6 @@ export function EncouragingMessage({ show, onDone }: EncouragingMessageProps) {
       style={{
         color: 'hsla(var(--h), var(--s), var(--l), 0.6)',
         opacity,
-        transition: 'opacity 0.3s ease',
       }}
     >
       {message}

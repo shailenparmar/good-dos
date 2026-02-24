@@ -274,7 +274,7 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
           <div className="flex-shrink-0 flex items-stretch gap-0">
             <button
               onClick={onPrev}
-              className="font-mono font-black rounded-sm active:scale-90 flex items-center justify-center uppercase"
+              className="font-mono font-black active:scale-90 flex items-center justify-center uppercase"
               style={{
                 fontSize: 'clamp(22px, 3vw, 36px)',
                 color: 'hsl(var(--h), var(--s), var(--l))',
@@ -296,13 +296,13 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
               <span style={{ fontSize: 'clamp(13px, 1.8vw, 20px)' }}>
                 {monthTitle?.split(' ')[0] ?? ''} {new Date().getDate()}
               </span>
-              <span style={{ fontSize: 'clamp(11px, 1.3vw, 14px)' }}>
+              <span style={{ fontSize: 'clamp(13px, 1.8vw, 20px)' }}>
                 {monthTitle?.split(' ')[1] ?? ''}
               </span>
             </div>
             <button
               onClick={onNext}
-              className="font-mono font-black rounded-sm active:scale-90 flex items-center justify-center uppercase"
+              className="font-mono font-black active:scale-90 flex items-center justify-center uppercase"
               style={{
                 fontSize: 'clamp(22px, 3vw, 36px)',
                 color: 'hsl(var(--h), var(--s), var(--l))',
@@ -319,7 +319,7 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
         {/* BREADCRUMB SQUARES — to the right of nav, before input */}
         {lockedDateLabel && step !== 'date' && (
           <div
-            className="flex-shrink-0 flex items-center justify-center font-mono font-black rounded-sm uppercase"
+            className="flex-shrink-0 flex items-center justify-center font-mono font-black uppercase"
             style={{
               padding: '0 clamp(8px, 1.2vw, 16px)',
               color: 'hsl(var(--h), var(--s), var(--l))',
@@ -333,7 +333,7 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
         )}
         {lockedName && step === 'priority' && (
           <div
-            className="flex-shrink-0 flex items-center justify-center font-mono font-black rounded-sm truncate uppercase"
+            className="flex-shrink-0 flex items-center justify-center font-mono font-black truncate uppercase"
             style={{
               padding: '0 clamp(8px, 1.2vw, 16px)',
               maxWidth: 'clamp(100px, 18vw, 200px)',
@@ -363,7 +363,7 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
             }, 150)
           }}
           placeholder={placeholder}
-          className="flex-1 min-w-0 bg-transparent outline-none font-mono font-black text-center rounded-sm"
+          className="flex-1 min-w-0 bg-transparent outline-none font-mono font-black text-center"
           style={{
             color: 'hsl(var(--h), var(--s), var(--l))',
             caretColor: 'hsl(var(--h), var(--s), var(--l))',
@@ -377,7 +377,7 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
         {onSettings && (
           <button
             onClick={onSettings}
-            className="flex-shrink-0 font-mono font-black rounded-sm active:scale-90 flex items-center justify-center uppercase"
+            className="flex-shrink-0 font-mono font-black active:scale-90 flex items-center justify-center uppercase"
             style={{
               color: 'hsl(var(--h), var(--s), var(--l))',
               fontSize: 'clamp(13px, 1.8vw, 20px)',

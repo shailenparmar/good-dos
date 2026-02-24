@@ -9,11 +9,11 @@ export function ProgressBar({ completed, total }: ProgressBarProps) {
 
   return (
     <div
-      className="h-1 w-full rounded-full overflow-hidden"
+      className="h-1 w-full overflow-hidden"
       style={{ backgroundColor: 'hsla(var(--h), var(--s), var(--l), 0.1)' }}
     >
       <div
-        className="h-full rounded-full transition-all duration-300"
+        className="h-full"
         style={{
           width: `${pct}%`,
           backgroundColor: 'hsla(var(--h), var(--s), var(--l), 0.5)',

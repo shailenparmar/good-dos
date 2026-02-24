@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import type { Task } from '../types'
 
 interface CalendarTaskItemProps {
@@ -10,7 +9,6 @@ interface CalendarTaskItemProps {
 }
 
 export function CalendarTaskItem({ task, onToggle, onCyclePriority, onClick, onPlaySound }: CalendarTaskItemProps) {
-  const [isHovered, setIsHovered] = useState(false)
 
   const getPriorityColor = () => {
     switch (task.priority) {
@@ -38,15 +36,11 @@ export function CalendarTaskItem({ task, onToggle, onCyclePriority, onClick, onP
 
   return (
     <div
-      className="flex items-center gap-2 px-2 py-1.5 font-mono select-none rounded"
+      className="flex items-center gap-2 px-2 py-1.5 font-mono select-none"
       style={{
         borderLeft: task.priority > 0 ? `3px solid ${getPriorityColor()}` : '3px solid transparent',
-        backgroundColor: isHovered ? 'hsla(var(--h), var(--s), 50%, 0.08)' : 'transparent',
-        opacity: 1,
         textDecoration: task.completed ? 'line-through' : 'none',
       }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
     >
       {/* Checkbox */}
       <button
@@ -87,7 +81,7 @@ export function CalendarTaskItem({ task, onToggle, onCyclePriority, onClick, onP
         title={`Priority ${task.priority} — click to cycle`}
       >
         <div
-          className="w-2 h-2 rounded-full"
+          className="w-2 h-2"
           style={{ backgroundColor: getDotColor() }}
         />
       </button>

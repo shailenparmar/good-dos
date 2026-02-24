@@ -44,7 +44,7 @@ export function CalendarNav({
       <div className="flex items-stretch gap-1.5 justify-center">
         <button
           onClick={onPrev}
-          className="font-mono font-black flex items-center justify-center rounded-sm active:scale-90"
+          className="font-mono font-black flex items-center justify-center active:scale-90"
           style={{
             fontSize: 'clamp(22px, 3vw, 36px)',
             padding: '4px clamp(10px, 1.5vw, 20px)',
@@ -55,7 +55,7 @@ export function CalendarNav({
         </button>
         <button
           onClick={onNext}
-          className="font-mono font-black flex items-center justify-center rounded-sm active:scale-90"
+          className="font-mono font-black flex items-center justify-center active:scale-90"
           style={{
             fontSize: 'clamp(22px, 3vw, 36px)',
             padding: '4px clamp(10px, 1.5vw, 20px)',
@@ -67,7 +67,7 @@ export function CalendarNav({
         <button
           onClick={onToday}
           disabled={isCurrentPeriod}
-          className="font-mono font-black flex items-center justify-center rounded-sm active:scale-90"
+          className="font-mono font-black flex items-center justify-center active:scale-90"
           style={{
             fontSize: 'clamp(13px, 1.8vw, 20px)',
             padding: '4px clamp(12px, 2vw, 24px)',
@@ -80,7 +80,7 @@ export function CalendarNav({
         {onSettings && (
           <button
             onClick={onSettings}
-            className="flex items-center justify-center rounded-sm active:scale-90"
+            className="flex items-center justify-center active:scale-90"
             style={{
               padding: '4px clamp(10px, 1.5vw, 20px)',
               ...btnStyle,

@@ -37,6 +37,16 @@ export function MonthView({ year, month, getTasksForDate, onToggle, onCyclePrior
 
   const hasHighlights = highlightedDates && highlightedDates.size > 0
 
+  // Find which row contains today for double-height
+  const todayRowIndex = useMemo(() => {
+    for (let wi = 0; wi < trimmedGrid.length; wi++) {
+      for (const date of trimmedGrid[wi]) {
+        if (date && isSameDay(date, today)) return wi
+      }
+    }
+    return -1
+  }, [trimmedGrid, today])
+
   // Global arrow keys for month navigation (when input not focused)
   useEffect(() => {
     if (!onPrev || !onNext) return
@@ -77,7 +87,7 @@ export function MonthView({ year, month, getTasksForDate, onToggle, onCyclePrior
       <div
         className="grid grid-cols-7 flex-1 min-h-0"
         style={{
-          gridTemplateRows: `repeat(${trimmedGrid.length}, 1fr)`,
+          gridTemplateRows: trimmedGrid.map((_, i) => i === todayRowIndex ? '2fr' : '1fr').join(' '),
           border: '3px solid hsla(var(--h), var(--s), var(--l), 0.1)',
           gap: 0,
         }}

@@ -19,7 +19,7 @@ export function PriorityIndicator({ priority, onClick }: PriorityIndicatorProps)
       title={`Priority ${priority} — click to cycle`}
     >
       <div
-        className="w-4 h-4 rounded-full"
+        className="w-4 h-4"
         style={{ backgroundColor: getColor() }}
       />
     </button>

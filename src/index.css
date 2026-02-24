@@ -16,6 +16,11 @@ html, body {
   border-radius: 0 !important;
 }
 
+/* NO TRANSITIONS — everything instant */
+*, *::before, *::after {
+  transition: none !important;
+}
+
 /* Cursor system */
 *, *::before, *::after {
   cursor: inherit;
