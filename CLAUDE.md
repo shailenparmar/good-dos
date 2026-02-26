@@ -1,8 +1,8 @@
-# Claude Code Instructions — Good Weeks
+# Claude Code Instructions — Good Dos
 
 ## Project Overview
 
-"Good Weeks" — local-first PWA calendar-based task manager. No server, no accounts — everything stored in IndexedDB (via Dexie) and localStorage.
+"Good Dos" — local-first PWA calendar-based task manager. No server, no accounts — everything stored in IndexedDB (via Dexie) and localStorage.
 
 **Dev server:** `npm run dev` → http://localhost:5173/
 
@@ -129,14 +129,10 @@ Both views render tasks as **`[square checkbox][task text box]`**:
 - **Checkbox click**: plays sound + toggles complete.
 - **Text click**: toggles edit panel (click same task = close).
 
-### Highlight Shadows (inset box-shadow, consistent across views)
-| State | Shadow |
-|-------|--------|
-| Locked date | `inset 0 0 0 12px` alpha `0.7` |
-| Active highlight | `inset 0 0 0 12px` alpha `0.7` |
-| Filter match | `inset 0 0 0 6px` alpha `0.6` |
-| Cursor (month only) | `inset 0 0 0 6px` alpha `0.4` |
-| Selected task's daycell | `inset 0 0 0 3px` alpha `0.4` |
+### Highlight System (dark cell border, no inset shadows)
+All daycell highlights use the same treatment: cell `border` all 4 sides at full opacity (`3px solid hsl(var(--h), var(--s), var(--l))`).
+States: locked date, cursor, filter match, selected task in cell.
+Drag-over is the only exception (uses `inset 0 0 0 6px` at full opacity).
 
 ### Date Options for Input Bar
 Both views provide date options sorted **today-first** (closest future dates first, then past). Never start from the leftmost/earliest day of the period.

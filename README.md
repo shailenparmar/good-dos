@@ -1,4 +1,4 @@
-# good weeks
+# good dos
 
 type-first calendar interface
 

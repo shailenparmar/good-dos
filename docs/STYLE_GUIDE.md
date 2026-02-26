@@ -1,4 +1,4 @@
-# Good Weeks — Style Guide
+# Good Dos — Style Guide
 
 ## Design Principles
 
@@ -67,22 +67,23 @@ Three tiers by element type:
 
 | Tier | Width | Used For |
 |------|-------|----------|
-| **THICK** | 12px | Main input box, flash message |
-| **SELECTION** | 6px | Breadcrumbs, selected priority/typetag/recurrence buttons, view toggle (active), colors button (active) |
+| **THICK** | 12px | Flash message |
+| **SELECTION** | 6px | Main input box (typer), breadcrumbs, selected priority/typetag/recurrence buttons, view toggle (active), colors button (active), daycell highlights (leader/locked/selected) |
 | **NORMAL** | 3px | Everything else — checkboxes, task boxes, grid lines, edit panel, buttons, nav arrows |
 
-### Highlight System (inset box-shadow)
+### Highlight System (inset box-shadow, no border overlays, no fills)
 
-Day cells use `inset box-shadow` for state highlights (preserves grid border consistency):
+All daycell highlights use inset box-shadow at 6px. No border overlay divs. No background fills.
 
-| State | Shadow | Priority |
-|-------|--------|----------|
-| Locked date (clicked) | `inset 0 0 0 12px ... 0.7` | 1 (highest) |
-| Filter match + active | `inset 0 0 0 12px ... 0.7` | 2 |
-| Filter match | `inset 0 0 0 6px ... 0.6` | 3 |
-| Arrow cursor | `inset 0 0 0 6px ... 0.4` | 4 |
-| Selected task in cell | `inset 0 0 0 3px ... 0.4` | 5 |
-| Drag-over | `inset 0 0 0 6px ... 1.0` | overrides all |
+| State | Shadow | Alpha |
+|-------|--------|-------|
+| **Leader** (active filter match) | `inset 0 0 0 6px` | 0.7 |
+| **Locked date** | `inset 0 0 0 6px` | 0.7 |
+| **Selected task in cell** | `inset 0 0 0 6px` | 0.7 |
+| **Candidate** (other filter matches) | `inset 0 0 0 6px` | 0.2 |
+| **Drag-over** | `inset 0 0 0 6px` | 1.0 |
+
+Leader and locked use the same 6px / 0.7 as the typer border and month/week toggle — visually linked.
 
 ### Border Collapse
 
@@ -131,9 +132,11 @@ Each task in a day cell renders as `[checkbox][task box]`:
 └──────┴──────────────────────┘
 ```
 
-- **Checkbox**: square (`width: sqSize, height: sqSize`), `backgroundColor` = priority color, `border: 3px`, X SVG when completed. Click toggles completion + plays sound.
-- **Task box**: `flex-1`, `height: sqSize`, `borderLeft: 'none'` (shares border with checkbox), `backgroundColor` = typetag color at low alpha. Click opens TaskEditPanel.
+- **Row**: `flex items-stretch` — checkbox and task box stretch to equal height.
+- **Checkbox**: square (`width: sqSize`, `aspect-ratio: 1`), `flex-shrink-0`, `backgroundColor` = priority color, `border: 3px` at 0.2 alpha, X SVG when completed. Click toggles completion + plays sound.
+- **Task box**: `flex-1`, `borderLeft: 'none'` (shares border with checkbox), `backgroundColor` = typetag color at low alpha. Click opens TaskEditPanel. Height stretches to match checkbox.
 - **Border collapse**: subsequent tasks omit `borderTop` on both checkbox and task box.
+- **No overflow-hidden on task container** — the cell handles clipping; task container must not clip its children.
 - **Checkbox sizes scale with density**: <=3 tasks: `clamp(18px, 2.5vw, 28px)`, 4-5: `clamp(14px, 2vw, 22px)`, 6+: `clamp(10px, 1.4vw, 16px)`.
 
 ## Component Terminology
@@ -158,17 +161,19 @@ Each task in a day cell renders as `[checkbox][task box]`:
 - **Flash message** — On task completion, input bar temporarily shows random success message (1.5s) with 12px full-opacity border.
 - **Completion sound** — Cycles through 8 Web Audio tones.
 
-### Task Input Wizard Steps
+### The Drill (Task Creation Flow)
 
-1. **Date step** — Type to fuzzy-filter dates (full names, shorthand like "tu2", aliases "today"/"tom"). Tab cycles through days. Enter confirms.
-2. **Name step** — Type the task name. Backspace when empty returns to date step. Enter confirms.
-3. **Priority step** — Type none/yellow/red or Tab to cycle. Enter confirms and creates the task.
+The full task creation sequence through the typer. Three phases:
+
+1. **Aim** (date step) — Type to fuzzy-filter dates, producing **candidates** (all matches, 6px/0.2 highlight) and one **leader** (active match, 6px/0.7 highlight). Arrow keys move the **selector**. Tab cycles. Enter locks the day.
+2. **Name** — Type the task name. Backspace when empty returns to aim. Enter locks the name.
+3. **Heat** (priority step) — Type none/yellow/red or Tab to cycle. Backspace when empty returns to name. Enter creates the task.
 
 ### Keyboard Navigation
 
-- **Arrow keys** — Move cursor between day cells (null by default, appears on first press at today). Auto-navigates months at boundaries.
-- **Enter** — On cursor: locks day (same as click). In input: advances wizard step.
-- **Escape** — Unwinds: colors picker > settings > edit panel > snap view to today + hide cursor.
+- **Arrow keys** — Move selector between day cells during aim (date step). First press spawns on today. Left/right ±1 day, up/down ±7 days. Clamped at grid edges.
+- **Enter** — On selector: locks day and advances to name step. In input: advances wizard step.
+- **Escape** — Unwinds: priority → name → date → blur → colors picker > settings > edit panel > snap to today.
 - **Tab** — Always cycles through dates (even when input unfocused). Shift+Tab goes backward.
 
 ## Responsive Behavior
