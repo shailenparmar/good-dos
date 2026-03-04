@@ -37,7 +37,11 @@ export function TaskEditPanel({ task, typetags, onUpdate, onDelete, onRemoveRecu
   // Sync text when task changes externally
   useEffect(() => { setText(task.text) }, [task.text])
 
-  // (no autofocus on open — user may have just finished typing)
+  // Auto-focus name input on open so user can immediately edit
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => nameRef.current?.focus())
+    return () => cancelAnimationFrame(raf)
+  }, [])
 
   // Focus tag input when adding
   useEffect(() => {
