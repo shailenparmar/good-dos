@@ -192,6 +192,11 @@ const handleCreateTask = useCallback(async (name: string, dueDate: string, prior
   if (priority !== 0) {
     await updateTask(id, { priority })
   }
+  // Auto-open the TaskEditPanel for the newly created task
+  const newTask = await db.tasks.get(id)
+  if (newTask) {
+    setSelectedTask(newTask)
+  }
 }, [addTask, updateTask])
 
   const handleClearPrefill = useCallback(() => {
