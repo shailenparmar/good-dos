@@ -1,3 +1,6 @@
+Here's the full file — select all and copy:
+
+```tsx
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { toDateString, formatCalendarDay, fuzzyMatch } from '@shared/utils/date'
 
@@ -22,7 +25,7 @@ const PRIORITY_OPTIONS: PriorityOption[] = [
 
 function matchPriority(query: string): PriorityOption | null {
   const q = query.toLowerCase().trim()
-  if (!q) return PRIORITY_OPTIONS[0] // default to "none" when empty
+  if (!q) return PRIORITY_OPTIONS[0]
   const match = PRIORITY_OPTIONS.find(o => o.label.startsWith(q))
   return match ?? null
 }
@@ -88,32 +91,31 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
   const allDateOptionsRef = useRef(allDateOptions)
   allDateOptionsRef.current = allDateOptions
 
+  // Ref to always have current inputValue inside the global keydown closure
+  const inputValueRef = useRef(inputValue)
+  useEffect(() => { inputValueRef.current = inputValue }, [inputValue])
+
   const onPrevRef = useRef(onPrev)
   const onNextRef = useRef(onNext)
   const lockedDateRef = useRef(lockedDate)
   useEffect(() => { stepRef.current = step }, [step])
   useEffect(() => { isActiveRef.current = isActive }, [isActive])
   useEffect(() => { lockedDateRef.current = lockedDate }, [lockedDate])
-  // allDateOptionsRef updated synchronously above (not via effect) to avoid stale reads
   useEffect(() => { onPrevRef.current = onPrev }, [onPrev])
   useEffect(() => { onNextRef.current = onNext }, [onNext])
 
-  // Filter dates by typed input (fuzzy: "f" → friday, "wednesday" → wed, "tu2" → tue 2x)
   const filteredDateOptions = useMemo(() => {
     const q = inputValue.trim()
     if (!q) return allDateOptions
     return allDateOptions.filter(o => fuzzyMatch(q, o.label))
   }, [allDateOptions, inputValue])
 
-  // Type anywhere to auto-focus input; intercept Tab globally for date cycling
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      // Tab — intercept for day cycling, but not when focus is inside the edit panel
       if (e.key === 'Tab') {
         if ((e.target as HTMLElement)?.closest?.('[data-edit-panel]')) return
         e.preventDefault()
 
-        // If not in date step, reset to date step — resume from locked date
         if (stepRef.current !== 'date') {
           const prevDate = lockedDateRef.current
           setStep('date')
@@ -123,7 +125,6 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
           setLockedDateLabel(null)
           setLockedName(null)
           setIsActive(true)
-          // Find the locked date in options so next Tab advances from there
           const opts = allDateOptionsRef.current
           if (prevDate) {
             const idx = opts.findIndex(o => o.value === prevDate)
@@ -137,33 +138,49 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
 
         setIsActive(true)
         const backward = e.shiftKey
-        const opts = allDateOptionsRef.current
+
+        // Use filtered options if there's a query, otherwise all options
+        const query = inputValueRef.current.trim()
+        const opts = query
+          ? allDateOptionsRef.current.filter(o => fuzzyMatch(query, o.label))
+          : allDateOptionsRef.current
         if (opts.length === 0) return
 
         setTabbedDateIndex(prev => {
           if (prev === null) {
-            // No day selected:
-            // Today's month → select today; other month → first of month (index 0)
             const todayStr = toDateString(new Date())
             const todayIdx = opts.findIndex(o => o.value === todayStr)
             return todayIdx >= 0 ? todayIdx : 0
           }
-          // Day selected → go to next/prev day
-          const next = prev + (backward ? -1 : 1)
+          const currentValue = allDateOptionsRef.current[prev]?.value
+          const currentInFiltered = currentValue
+            ? opts.findIndex(o => o.value === currentValue)
+            : -1
+          const fromIdx = currentInFiltered >= 0 ? currentInFiltered : 0
+          const next = fromIdx + (backward ? -1 : 1)
+
           if (next >= opts.length) {
-            onNextRef.current?.()
-            requestAnimationFrame(() => setTabbedDateIndex(0))
-            return prev
+            if (!query) {
+              onNextRef.current?.()
+              requestAnimationFrame(() => setTabbedDateIndex(0))
+              return prev
+            }
+            return 0
           }
           if (next < 0) {
-            onPrevRef.current?.()
-            requestAnimationFrame(() => {
-              const newOpts = allDateOptionsRef.current
-              setTabbedDateIndex(newOpts.length - 1)
-            })
-            return prev
+            if (!query) {
+              onPrevRef.current?.()
+              requestAnimationFrame(() => {
+                const newOpts = allDateOptionsRef.current
+                setTabbedDateIndex(newOpts.length - 1)
+              })
+              return prev
+            }
+            return opts.length - 1
           }
-          return next
+
+          const targetValue = opts[next].value
+          return allDateOptionsRef.current.findIndex(o => o.value === targetValue)
         })
         inputRef.current?.focus()
         return
@@ -179,17 +196,14 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
     return () => window.removeEventListener('keydown', handleGlobalKeyDown)
   }, [])
 
-  // Emit filter changes to parent for calendar highlighting
   useEffect(() => {
     if (!onDateFilterChange) return
     if (step === 'date') {
-      // Tab-cycling: highlight the single tabbed date
       if (tabbedDateIndex !== null && allDateOptions[tabbedDateIndex]) {
         const d = allDateOptions[tabbedDateIndex].value
         onDateFilterChange([d], d)
         return
       }
-      // Text filtering: highlight all matching dates
       if (isActive && inputValue.trim()) {
         const dates = filteredDateOptions.map(o => o.value)
         onDateFilterChange(dates, dates[0] ?? null)
@@ -205,12 +219,10 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
     }
   }, [step, isActive, tabbedDateIndex, allDateOptions, filteredDateOptions, inputValue, onDateFilterChange])
 
-  // Emit locked date so calendar can highlight the chosen cell
   useEffect(() => {
     onLockedDateChange?.(lockedDate)
   }, [lockedDate, onLockedDateChange])
 
-  // Handle prefill from day cell click
   useEffect(() => {
     if (prefillDate) {
       prefilling.current = true
@@ -225,7 +237,6 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
       onClearPrefill()
       requestAnimationFrame(() => {
         inputRef.current?.focus()
-        // Clear flag after focus settles
         requestAnimationFrame(() => { prefilling.current = false })
       })
     }
@@ -242,7 +253,6 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
     setIsActive(false)
   }, [])
 
-  // External reset signal (e.g. clicking same day again)
   const resetKeyRef = useRef(resetKey)
   useEffect(() => {
     if (resetKey !== resetKeyRef.current) {
@@ -268,7 +278,6 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
     setTabbedDateIndex(null)
   }, [inputValue])
 
-  // Priority match from current input
   const matchedPriority = useMemo(() => {
     if (step !== 'priority') return null
     return matchPriority(inputValue)
@@ -277,7 +286,6 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
       e.preventDefault()
-      // Progressive unwind: priority → name → date → blur (let CalendarView handle the rest)
       if (step === 'priority') {
         setLockedName(null)
         setStep('name')
@@ -291,7 +299,6 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
         setInputValue('')
         return
       }
-      // In date step — reset, blur, and tell CalendarView to continue unwinding
       reset()
       inputRef.current?.blur()
       onEscape?.()
@@ -310,7 +317,6 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
         })
       } else if (e.key === 'Enter') {
         e.preventDefault()
-        // Select the tabbed date, or first filtered match, or first available
         const selected = (tabbedDateIndex !== null && allDateOptions[tabbedDateIndex])
           ? allDateOptions[tabbedDateIndex]
           : filteredDateOptions[0] ?? allDateOptions[0]
@@ -348,7 +354,6 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
       }
       if (e.key === 'Tab') {
         e.preventDefault()
-        // Cycle through priority options by setting the input to the next label
         const currentIdx = PRIORITY_OPTIONS.findIndex(o => o.label.startsWith(inputValue.toLowerCase().trim()))
         const nextIdx = e.shiftKey
           ? (((currentIdx === -1 ? 0 : currentIdx) - 1 + PRIORITY_OPTIONS.length) % PRIORITY_OPTIONS.length)
@@ -371,7 +376,6 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
       ? 'task...'
       : 'none / yellow / red'
 
-  // Border color reflects current state
   let borderColor = 'hsla(var(--h), var(--s), var(--l), 0.2)'
   if (step === 'priority' && matchedPriority) {
     borderColor = matchedPriority.color
@@ -382,7 +386,6 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
   return (
     <div className="flex-shrink-0">
       <div className="flex items-stretch" style={{ padding: 'var(--sp-sm) var(--sp-md)', gap: 'var(--sp-sm)' }}>
-        {/* LEFT — month+day / year stacked, arrows alongside, full height */}
         {onPrev && onNext && (
           <div className="flex-shrink-0 flex items-stretch gap-0">
             <button
@@ -431,7 +434,6 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
           </div>
         )}
 
-        {/* BREADCRUMB — locked date as "FRI 27" */}
         {lockedDate && step !== 'date' && (() => {
           const { dayName, dayNum } = formatCalendarDay(lockedDate)
           return (
@@ -465,7 +467,6 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
           </div>
         )}
 
-        {/* CENTER — THE INPUT or flash message */}
         <div className="flex-1 min-w-0 relative">
           {flashMessage ? (
             <div
@@ -507,7 +508,6 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
           )}
         </div>
 
-        {/* RIGHT — view toggle + colors, adjacent like left nav */}
         <div className="flex-shrink-0 flex items-stretch gap-0">
           {onViewChange && (
             <>
@@ -556,3 +556,4 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
     </div>
   )
 }
+```
