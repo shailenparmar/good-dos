@@ -22,7 +22,7 @@ export default defineConfig({
       },
     }),
   ],
-  base: '/',
+  base: '/good-dos/',
   resolve: {
     alias: {
       '@features': path.resolve(__dirname, './src/features'),
