@@ -160,13 +160,7 @@ export function MonthDayCell({ date, dateStr, tasks, isToday, isCurrentMonth, fi
                   draggable
                   onDragStart={e => handleDragStart(e, task.id)}
                 >
-                  {/* Square checkbox */}
-                  <div
-                    className="relative flex-shrink-0"
-                    style={{
-                      width: sqSize,
-                      aspectRatio: '1',
-                      backgroundColor: getPriorityColor(task.priority),
+: getPriorityColor(task.priority),
                       border,
                     }}
                     onClick={e => e.stopPropagation()}
@@ -183,11 +177,11 @@ export function MonthDayCell({ date, dateStr, tasks, isToday, isCurrentMonth, fi
                       </svg>
                     )}
                   </div>
-                  {/* Task box — tag color as fill */}
+                  {/* Task box — tag color as border and fill */}
                   <div
                     className="flex-1 min-w-0 flex items-center"
                     style={{
-                      border,
+                      border: catColor ? `3px solid ${catColor}` : border,
                       borderLeft: 'none',
                       backgroundColor: catColor ? catColor + '30' : undefined,
                       padding: pad,
