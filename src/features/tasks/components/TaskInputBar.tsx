@@ -106,8 +106,14 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
     return matchPriority(inputValue)
   }, [step, inputValue])
 
-  // Typing clears tab highlight so calendar shows filter highlights instead
-  useEffect(() => { setTabbedDate(null) }, [inputValue])
+  // When typing, auto-select first match. Tab will then move forward from there.
+  useEffect(() => {
+    if (inputValue.trim() && filteredDates.length > 0) {
+      setTabbedDate(filteredDates[0].value)
+    } else {
+      setTabbedDate(null)
+    }
+  }, [inputValue, filteredDates])
 
   // Tell the calendar what to highlight
   useEffect(() => {
@@ -121,10 +127,10 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
     }
     if (tabbedDate) { onDateFilterChange([tabbedDate], tabbedDate); return }
     if (isActive && inputValue.trim()) {
-  const dates = filteredDates.map(o => o.value)
-  onDateFilterChange(dates, null)
-  return
-}
+      const dates = filteredDates.map(o => o.value)
+      onDateFilterChange(dates, dates[0] ?? null)
+      return
+    }
     onDateFilterChange([], null)
   }, [step, isActive, tabbedDate, filteredDates, inputValue, onDateFilterChange])
 
