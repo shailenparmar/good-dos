@@ -59,7 +59,6 @@ export function MonthDayCell({ date, dateStr, tasks, isToday, isCurrentMonth, fi
 
   const allTasks = tasks
 
-  // ── Background ──
   let bgColor = 'transparent'
   if (isLockedDate) {
     bgColor = 'hsla(var(--h), var(--s), var(--l), 0.2)'
@@ -69,10 +68,8 @@ export function MonthDayCell({ date, dateStr, tasks, isToday, isCurrentMonth, fi
       : 'hsla(var(--h), var(--s), var(--l), 0.1)'
   }
 
-  // ── Opacity ──
   const cellOpacity = isCurrentMonth ? 1 : 0.12
 
-  // ── Highlight — inset box-shadow so grid borders stay consistent ──
   const hasSelectedTask = selectedTaskId ? allTasks.some(t => t.id === selectedTaskId) : false
   let highlightShadow = 'none'
   if (isLockedDate) {
@@ -85,12 +82,6 @@ export function MonthDayCell({ date, dateStr, tasks, isToday, isCurrentMonth, fi
     highlightShadow = 'inset 0 0 0 6px hsla(var(--h), var(--s), var(--l), 0.4)'
   } else if (hasSelectedTask) {
     highlightShadow = 'inset 0 0 0 3px hsla(var(--h), var(--s), var(--l), 0.4)'
-  }
-
-  const handleSmack = (task: Task, e: React.MouseEvent) => {
-    e.stopPropagation()
-    onPlaySound(false, task.priority)
-    onToggle(task.id)
   }
 
   return (
@@ -108,7 +99,7 @@ export function MonthDayCell({ date, dateStr, tasks, isToday, isCurrentMonth, fi
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      {/* Day number / TODAY — big watermark, clipped to cell */}
+      {/* Day number / TODAY watermark */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden">
         {isToday ? (
           <div
@@ -137,13 +128,13 @@ export function MonthDayCell({ date, dateStr, tasks, isToday, isCurrentMonth, fi
         )}
       </div>
 
-      {/* Tasks — box model: [text inside], fill=priority, border=category, X on complete */}
+      {/* Tasks */}
       {allTasks.length > 0 && (() => {
         const totalRows = allTasks.length
         const sqSize = totalRows <= 3 ? 'clamp(18px, 2.5vw, 28px)' : totalRows <= 5 ? 'clamp(14px, 2vw, 22px)' : 'clamp(10px, 1.4vw, 16px)'
         const txtSize = totalRows <= 3 ? 'clamp(13px, 1.8vw, 18px)' : totalRows <= 5 ? 'clamp(11px, 1.4vw, 15px)' : 'clamp(9px, 1.1vw, 12px)'
         const pad = totalRows <= 3 ? 'var(--sp-xs) var(--sp-sm)' : '2px 4px'
-        const border = '3px solid hsla(var(--h), var(--s), var(--l), 0.2)'
+        const defaultBorder = '3px solid hsla(var(--h), var(--s), var(--l), 0.2)'
 
         return (
           <div
@@ -160,8 +151,14 @@ export function MonthDayCell({ date, dateStr, tasks, isToday, isCurrentMonth, fi
                   draggable
                   onDragStart={e => handleDragStart(e, task.id)}
                 >
-: getPriorityColor(task.priority),
-                      border,
+                  {/* Square checkbox */}
+                  <div
+                    className="relative flex-shrink-0"
+                    style={{
+                      width: sqSize,
+                      aspectRatio: '1',
+                      backgroundColor: getPriorityColor(task.priority),
+                      border: defaultBorder,
                     }}
                     onClick={e => e.stopPropagation()}
                     onMouseDown={e => {
@@ -177,11 +174,11 @@ export function MonthDayCell({ date, dateStr, tasks, isToday, isCurrentMonth, fi
                       </svg>
                     )}
                   </div>
-                  {/* Task box — tag color as border and fill */}
+                  {/* Task text box — tag color as border and fill */}
                   <div
                     className="flex-1 min-w-0 flex items-center"
                     style={{
-                      border: catColor ? `3px solid ${catColor}` : border,
+                      border: catColor ? `3px solid ${catColor}` : defaultBorder,
                       borderLeft: 'none',
                       backgroundColor: catColor ? catColor + '30' : undefined,
                       padding: pad,
