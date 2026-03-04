@@ -174,14 +174,11 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
     if (opts.length === 0) return
     const current = tabbedDateRef.current
     const currentIdx = current ? opts.findIndex(o => o.value === current) : -1
-    let nextIdx: number
-    if (currentIdx === -1) {
-      const todayStr = toDateString(new Date())
-      const todayIdx = opts.findIndex(o => o.value === todayStr)
-      nextIdx = backward ? opts.length - 1 : (todayIdx >= 0 ? todayIdx : 0)
-    } else {
-      nextIdx = (currentIdx + (backward ? -1 : 1) + opts.length) % opts.length
-    }
+    // Always start at index 0 (or last if shift-tab) on first press.
+    // No special-casing for today — just cycle through whatever is in opts.
+    const nextIdx = currentIdx === -1
+      ? (backward ? opts.length - 1 : 0)
+      : (currentIdx + (backward ? -1 : 1) + opts.length) % opts.length
     setTabbedDate(opts[nextIdx].value)
     setIsActive(true)
     inputRef.current?.focus()
