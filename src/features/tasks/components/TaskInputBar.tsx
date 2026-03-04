@@ -1,5 +1,3 @@
-Here's the full file — select all and copy:
-
 ```tsx
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { toDateString, formatCalendarDay, fuzzyMatch } from '@shared/utils/date'
