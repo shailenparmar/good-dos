@@ -270,10 +270,14 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
     requestAnimationFrame(() => inputRef.current?.focus())
   }, [isActive])
 
-  useEffect(() => {
-    setHighlightIndex(0)
+useEffect(() => {
+  setHighlightIndex(0)
+  // Only reset the tabbed index when input is cleared, not while typing to filter.
+  // While filtering, Tab should cycle within the filtered results starting from 0.
+  if (!inputValue.trim()) {
     setTabbedDateIndex(null)
-  }, [inputValue])
+  }
+}, [inputValue])
 
   const matchedPriority = useMemo(() => {
     if (step !== 'priority') return null
