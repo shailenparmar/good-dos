@@ -113,6 +113,12 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
   useEffect(() => {
     if (!onDateFilterChange) return
     if (step !== 'date') { onDateFilterChange([], null); return }
+    if (tabbedDate && inputValue.trim()) {
+      // Tabbing with a filter active — show all matches softly, tabbed one strongly
+      const dates = filteredDates.map(o => o.value)
+      onDateFilterChange(dates, tabbedDate)
+      return
+    }
     if (tabbedDate) { onDateFilterChange([tabbedDate], tabbedDate); return }
     if (isActive && inputValue.trim()) {
       const dates = filteredDates.map(o => o.value)
