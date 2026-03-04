@@ -1,4 +1,3 @@
-```tsx
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { toDateString, formatCalendarDay, fuzzyMatch } from '@shared/utils/date'
 
@@ -554,4 +553,3 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
     </div>
   )
 }
-```
