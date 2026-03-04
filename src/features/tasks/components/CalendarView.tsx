@@ -187,14 +187,12 @@ export function CalendarView({ settingsOpen, onCloseSettings }: CalendarViewProp
     }
   }, [lockedDate])
 
-  const handleCreateTask = useCallback(async (name: string, dueDate: string, priority: 0 | 1 | 2) => {
-    const id = await addTask(name, '', dueDate)
-    if (priority !== 0) {
-      await updateTask(id, { priority })
-    }
-    // Auto-open edit panel for the new task
-    setSelectedTask({ id } as Task)
-  }, [addTask, updateTask])
+const handleCreateTask = useCallback(async (name: string, dueDate: string, priority: 0 | 1 | 2) => {
+  const id = await addTask(name, '', dueDate)
+  if (priority !== 0) {
+    await updateTask(id, { priority })
+  }
+}, [addTask, updateTask])
 
   const handleClearPrefill = useCallback(() => {
     setPrefillDate(null)
