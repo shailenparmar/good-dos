@@ -121,10 +121,10 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
     }
     if (tabbedDate) { onDateFilterChange([tabbedDate], tabbedDate); return }
     if (isActive && inputValue.trim()) {
-      const dates = filteredDates.map(o => o.value)
-      onDateFilterChange(dates, dates[0] ?? null)
-      return
-    }
+  const dates = filteredDates.map(o => o.value)
+  onDateFilterChange(dates, null)
+  return
+}
     onDateFilterChange([], null)
   }, [step, isActive, tabbedDate, filteredDates, inputValue, onDateFilterChange])
 
