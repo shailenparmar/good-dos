@@ -53,11 +53,11 @@ export function CalendarTaskItem({ task, onToggle, onCyclePriority: _onCyclePrio
         )}
       </div>
 
-      {/* Task text box — tag color as fill */}
+      {/* Task text box — tag color as border and fill */}
       <div
         className="flex-1 min-w-0 flex items-center"
         style={{
-          border,
+          border: categoryColor ? `3px solid ${categoryColor}` : border,
           borderLeft: 'none',
           backgroundColor: categoryColor ? categoryColor + '30' : undefined,
           padding: 'var(--sp-xs) var(--sp-sm)',
