@@ -196,6 +196,23 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
     inputRef.current?.focus()
   }, [])
 
+  // Jump ±7 calendar days from the current tabbedDate (up/down arrows)
+  const cycleWeek = useCallback((backward: boolean) => {
+    const current = tabbedDateRef.current
+    if (!current) { cycleDate(backward); return }
+    const d = new Date(current + 'T00:00:00')
+    d.setDate(d.getDate() + (backward ? -7 : 7))
+    const target = toDateString(d)
+    const opts = filteredDatesRef.current
+    if (opts.find(o => o.value === target)) {
+      setTabbedDate(target)
+      setIsActive(true)
+      inputRef.current?.focus()
+    } else {
+      cycleDate(backward)
+    }
+  }, [cycleDate])
+
   // Confirm the currently highlighted date and move to name step
   const confirmDate = useCallback(() => {
     const current = tabbedDateRef.current
@@ -265,10 +282,11 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
     }
 
     if (step === 'date') {
-      if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-        e.preventDefault()
-        inputRef.current?.blur() // hand off to cursor nav in MonthView
-      } else if (e.key === 'Enter') {
+      if (e.key === 'ArrowLeft') { e.preventDefault(); cycleDate(true) }
+      else if (e.key === 'ArrowRight') { e.preventDefault(); cycleDate(false) }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); cycleWeek(true) }
+      else if (e.key === 'ArrowDown') { e.preventDefault(); cycleWeek(false) }
+      else if (e.key === 'Enter') {
         e.preventDefault()
         confirmDate()
       }

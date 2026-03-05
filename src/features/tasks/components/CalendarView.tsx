@@ -67,12 +67,10 @@ export function CalendarView({ settingsOpen, onCloseSettings }: CalendarViewProp
   // and only lets Esc through once it's fully reset
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Printable key while edit panel is open → close panel so typing goes to the typer
-      // (unless the keystroke is from inside the panel's own editable elements)
+      // Printable key outside the edit panel → close panel so typing goes to the typer
       if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
         const target = e.target as HTMLElement
-        const insidePanel = !!target.closest?.('[data-edit-panel]')
-        if (!insidePanel && selectedTaskRef.current) {
+        if (!target.closest?.('[data-edit-panel]')) {
           setSelectedTask(null)
         }
         return
