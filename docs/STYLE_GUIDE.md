@@ -39,13 +39,15 @@ background-color: hsla(var(--h), var(--s), var(--l), 0.07)
 
 ### Priority Colors
 
-Used as checkbox fill (`backgroundColor`):
+Used as checkbox fill and as edit panel priority button border (selected state):
 
-| Level | Value | Color |
-|-------|-------|-------|
-| None | 0 | `transparent` |
+| Level | Value | Border color (selected) |
+|-------|-------|------------------------|
+| None | 0 | theme color `hsl(var(--h), var(--s), var(--l))` |
 | Medium | 1 | `hsl(45, 90%, 55%)` — yellow |
 | High | 2 | `hsl(0, 80%, 55%)` — red |
+
+Priority buttons in edit panel: **no fill, colored border only**. Selected = 6px border in priority color. Unselected = 3px border at 0.2 alpha.
 
 ### TypeTag Colors
 
@@ -53,8 +55,10 @@ Fixed palette in `TAG_COLORS` (`types.ts`), accessed via `tagColor(index)`:
 - Orange `hsl(28, 85%, 55%)`, Lime `hsl(85, 65%, 42%)`, Teal `hsl(175, 65%, 43%)`, Blue `hsl(215, 75%, 58%)`, Purple `hsl(270, 65%, 58%)`, Rose `hsl(325, 65%, 55%)`
 - Hues spaced ~60° apart for clear visual distinction
 - Cycles for index > 5
-- Applied as task box `backgroundColor` with `+'80'` hex alpha (~50% opacity) — fills the box visibly
-- Tag buttons in edit panel: colored border only; text is always theme color
+- Applied as task box `backgroundColor` at 50% opacity via `tagColorAlpha(i, 0.5)` (produces `hsla(...)`) — fills the box visibly
+- Tag buttons in edit panel: colored border + 50% fill when selected; unselected = 3px 0.2 alpha border, transparent bg
+- Text on all tag buttons is always theme color — never tag-colored
+- Use `tagColor(index)` for full color, `tagColorAlpha(index, alpha)` for transparent variant
 
 ### Border Alphas
 
