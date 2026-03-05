@@ -85,7 +85,6 @@ export function DayColumn({
       style={{
         boxShadow: isDragOver ? 'inset 0 0 0 6px hsl(var(--h), var(--s), var(--l))' : highlightShadow,
         backgroundColor: isDragOver ? 'hsla(var(--h), var(--s), var(--l), 0.25)' : bgColor,
-        borderTop: '3px solid hsla(var(--h), var(--s), var(--l), 0.1)',
       }}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -120,29 +119,10 @@ export function DayColumn({
         )}
       </div>
 
-      {/* Header */}
-      <div
-        className="relative z-10 flex items-baseline flex-shrink-0"
-        style={{ gap: 'var(--sp-sm)', padding: 'var(--sp-sm) var(--sp-sm)' }}
-      >
-        <span
-          className="font-mono font-black uppercase"
-          style={{ color: 'hsl(var(--h), var(--s), var(--l))', fontSize: 'clamp(11px, 1.3vw, 14px)' }}
-        >
-          {dayName}
-        </span>
-        <span
-          className="font-mono font-black uppercase"
-          style={{ color: 'hsl(var(--h), var(--s), var(--l))', fontSize: 'clamp(13px, 1.8vw, 20px)' }}
-        >
-          {dayNum}
-        </span>
-      </div>
-
       {/* Tasks */}
       <div className="relative z-10 overflow-y-auto scrollbar-hide flex flex-col" style={{ padding: 'var(--sp-xs)' }}>
-        {tasks.map((task, idx) => (
-          <div key={task.id} style={{ marginTop: idx > 0 ? '-3px' : undefined }}>
+        {tasks.map((task) => (
+          <div key={task.id}>
             <CalendarTaskItem
               task={task}
               onToggle={onToggle}

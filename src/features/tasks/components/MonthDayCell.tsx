@@ -19,7 +19,6 @@ interface MonthDayCellProps {
   onMoveTask?: (taskId: string, newDate: string) => void
   categoryColorMap?: Record<string, string>
   selectedTaskId?: string | null
-  isCursor?: boolean
 }
 
 function getPriorityColor(priority: number): string {
@@ -30,8 +29,9 @@ function getPriorityColor(priority: number): string {
   }
 }
 
-export function MonthDayCell({ date, dateStr, tasks, isToday, isCurrentMonth, filterMatch = 'none', isActiveHighlight, isLockedDate, onClick, onToggle, onTaskClick, onPlaySound, onMoveTask, categoryColorMap, selectedTaskId, isCursor }: MonthDayCellProps) {
+export function MonthDayCell({ date, dateStr, tasks, isToday, isCurrentMonth, filterMatch = 'none', isActiveHighlight, isLockedDate, onClick, onToggle, onTaskClick, onPlaySound, onMoveTask, categoryColorMap, selectedTaskId }: MonthDayCellProps) {
   const [isDragOver, setIsDragOver] = useState(false)
+  const [hoveredTaskId, setHoveredTaskId] = useState<string | null>(null)
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -78,10 +78,6 @@ export function MonthDayCell({ date, dateStr, tasks, isToday, isCurrentMonth, fi
     highlightShadow = 'inset 0 0 0 12px hsla(var(--h), var(--s), var(--l), 0.7)'
   } else if (filterMatch === 'match') {
     highlightShadow = 'inset 0 0 0 6px hsla(var(--h), var(--s), var(--l), 0.6)'
-  } else if (isCursor) {
-    highlightShadow = 'inset 0 0 0 6px hsla(var(--h), var(--s), var(--l), 0.4)'
-  } else if (hasSelectedTask) {
-    highlightShadow = 'inset 0 0 0 3px hsla(var(--h), var(--s), var(--l), 0.4)'
   }
 
   return (
@@ -147,7 +143,7 @@ export function MonthDayCell({ date, dateStr, tasks, isToday, isCurrentMonth, fi
                 <div
                   key={task.id}
                   className="flex items-stretch min-w-0"
-                  style={{ marginTop: idx > 0 ? '-3px' : undefined }}
+                  style={{}}
                   draggable
                   onDragStart={e => handleDragStart(e, task.id)}
                 >
@@ -184,6 +180,8 @@ export function MonthDayCell({ date, dateStr, tasks, isToday, isCurrentMonth, fi
                       padding: pad,
                     }}
                     onClick={e => e.stopPropagation()}
+                    onMouseEnter={() => setHoveredTaskId(task.id)}
+                    onMouseLeave={() => setHoveredTaskId(null)}
                     onMouseDown={e => {
                       e.stopPropagation()
                       onTaskClick(task)
@@ -195,6 +193,7 @@ export function MonthDayCell({ date, dateStr, tasks, isToday, isCurrentMonth, fi
                         color: 'hsl(var(--h), var(--s), var(--l))',
                         fontSize: txtSize,
                         lineHeight: '1.2',
+                        fontWeight: (task.id === selectedTaskId || task.id === hoveredTaskId) ? 900 : 400,
                       }}
                     >
                       {task.text || 'untitled'}

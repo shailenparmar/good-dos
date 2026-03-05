@@ -1,4 +1,4 @@
-import { useMemo, useEffect, useCallback } from 'react'
+import { useMemo } from 'react'
 import type { Task } from '../types'
 import { MonthDayCell } from './MonthDayCell'
 import { getMonthGrid, toDateString, isSameDay } from '@shared/utils/date'
@@ -22,11 +22,9 @@ interface MonthViewProps {
   onMoveTask?: (taskId: string, newDate: string) => void
   categoryColorMap?: Record<string, string>
   selectedTaskId?: string | null
-  cursorDate?: string | null
-  onCursorChange?: (dateStr: string) => void
 }
 
-export function MonthView({ year, month, getTasksForDate, onToggle, onCyclePriority, onTaskClick, onDayClick, onPlaySound, highlightedDates, activeHighlight, lockedDate, onPrev, onNext, onMoveTask, categoryColorMap, selectedTaskId, cursorDate, onCursorChange }: MonthViewProps) {
+export function MonthView({ year, month, getTasksForDate, onToggle, onCyclePriority, onTaskClick, onDayClick, onPlaySound, highlightedDates, activeHighlight, lockedDate, onPrev, onNext, onMoveTask, categoryColorMap, selectedTaskId }: MonthViewProps) {
   const grid = getMonthGrid(year, month)
   const today = new Date()
   today.setHours(0, 0, 0, 0)
@@ -52,41 +50,6 @@ export function MonthView({ year, month, getTasksForDate, onToggle, onCyclePrior
     return -1
   }, [trimmedGrid, today])
 
-  // Arrow keys move cursor between day cells (first press starts at today)
-  const moveCursor = useCallback((direction: 'left' | 'right' | 'up' | 'down') => {
-    if (!onCursorChange) return
-    if (!cursorDate) {
-      // First arrow press — show cursor on today
-      onCursorChange(toDateString(new Date()))
-      return
-    }
-    const d = new Date(cursorDate + 'T00:00:00')
-    switch (direction) {
-      case 'left': d.setDate(d.getDate() - 1); break
-      case 'right': d.setDate(d.getDate() + 1); break
-      case 'up': d.setDate(d.getDate() - 7); break
-      case 'down': d.setDate(d.getDate() + 7); break
-    }
-    onCursorChange(toDateString(d))
-  }, [cursorDate, onCursorChange])
-
-  useEffect(() => {
-    if (!onCursorChange) return
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const el = document.activeElement
-      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) return
-      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-        e.preventDefault()
-        const dir = e.key === 'ArrowLeft' ? 'left' : e.key === 'ArrowRight' ? 'right' : e.key === 'ArrowUp' ? 'up' : 'down'
-        moveCursor(dir)
-      } else if (e.key === 'Enter' && cursorDate) {
-        e.preventDefault()
-        onDayClick(cursorDate)
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [moveCursor, cursorDate, onDayClick, onCursorChange])
 
   return (
     <div className="flex-1 min-h-0 flex flex-col relative" style={{ padding: '0 var(--sp-xs) var(--sp-xs)' }}>
@@ -160,7 +123,6 @@ export function MonthView({ year, month, getTasksForDate, onToggle, onCyclePrior
                 onMoveTask={onMoveTask}
                 categoryColorMap={categoryColorMap}
                 selectedTaskId={selectedTaskId}
-                isCursor={cursorDate === dateStr}
               />
             )
           })

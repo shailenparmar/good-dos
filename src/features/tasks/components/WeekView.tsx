@@ -53,12 +53,30 @@ export function WeekView({
   }, [days]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
+    <div className="flex-1 min-h-0 flex flex-col" style={{ padding: '0 var(--sp-xs) var(--sp-xs)' }}>
+      {/* Day headers */}
+      <div className="grid grid-cols-7 gap-0 flex-shrink-0">
+        {days.map(date => (
+          <div
+            key={date.getDay()}
+            className="text-center font-mono font-bold uppercase"
+            style={{
+              padding: 'var(--sp-sm) 0',
+              color: 'hsla(var(--h), var(--s), var(--l), 0.2)',
+              fontSize: 'clamp(13px, 1.8vw, 20px)',
+            }}
+          >
+            {DAY_NAMES[date.getDay()]}
+          </div>
+        ))}
+      </div>
+
     <div
       ref={scrollRef}
       className="flex-1 min-h-0
         grid grid-cols-7
         max-md:flex max-md:overflow-x-auto max-md:snap-x max-md:snap-mandatory"
-      style={{ scrollbarWidth: 'none' }}
+      style={{ scrollbarWidth: 'none', border: '3px solid hsla(var(--h), var(--s), var(--l), 0.1)' }}
     >
       {days.map((date, i) => {
         const dateStr = toDateString(date)
@@ -73,7 +91,7 @@ export function WeekView({
               max-md:min-w-[min(280px,85vw)] max-md:snap-start max-md:flex-shrink-0"
             style={{
               borderRight: i < 6
-                ? '3px solid hsla(var(--h), var(--s), var(--l), 0.07)'
+                ? '3px solid hsla(var(--h), var(--s), var(--l), 0.08)'
                 : undefined,
             }}
           >
@@ -97,6 +115,7 @@ export function WeekView({
           </div>
         )
       })}
+    </div>
     </div>
   )
 }

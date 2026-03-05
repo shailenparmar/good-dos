@@ -3,6 +3,7 @@ import { ThemeProvider } from '@features/theme/context/ThemeContext'
 import { ErrorBoundary } from '@shared/components/ErrorBoundary'
 import { CalendarView } from '@features/tasks/components/CalendarView'
 import { SettingsPanel } from '@features/settings/components/SettingsPanel'
+import { APP_VERSION } from '@shared/version'
 
 function AppContent() {
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -28,6 +29,14 @@ function AppContent() {
 
       {/* Settings — slides in from right, shares space */}
       <SettingsPanel isOpen={settingsOpen} />
+
+      {/* Version — fixed bottom right */}
+      <div
+        className="fixed bottom-0 right-0 font-mono font-black pointer-events-none"
+        style={{ color: 'hsla(var(--h), var(--s), var(--l), 0.4)', fontSize: 'clamp(11px, 1.4vw, 16px)', padding: 'var(--sp-sm)' }}
+      >
+        v{APP_VERSION}
+      </div>
     </div>
   )
 }

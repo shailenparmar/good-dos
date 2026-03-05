@@ -51,7 +51,7 @@ export function CalendarView({ settingsOpen, onCloseSettings }: CalendarViewProp
   const [colorsOpen, setColorsOpen] = useState(false)
   const [flashMessage, setFlashMessage] = useState<string | null>(null)
   const flashTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const [cursorDate, setCursorDate] = useState<string | null>(null)
+
 
   // Refs for ESC handler (avoid stale closures)
   const selectedTaskRef = useRef(selectedTask)
@@ -100,9 +100,8 @@ export function CalendarView({ settingsOpen, onCloseSettings }: CalendarViewProp
         return
       }
 
-      // Nothing open — snap view back to today, hide cursor
+      // Nothing open — snap view back to today
       setMonthOffset(0)
-      setCursorDate(null)
     }
 
     window.addEventListener('keydown', handleKeyDown)
@@ -160,19 +159,6 @@ export function CalendarView({ settingsOpen, onCloseSettings }: CalendarViewProp
   const handlePrev = useCallback(() => setMonthOffset(m => m - 1), [])
   const handleNext = useCallback(() => setMonthOffset(m => m + 1), [])
 
-  const handleCursorChange = useCallback((dateStr: string) => {
-    setCursorDate(dateStr)
-    // If cursor moves to a different month, navigate there
-    const d = new Date(dateStr + 'T00:00:00')
-    const cursorYear = d.getFullYear()
-    const cursorMonth = d.getMonth()
-    if (cursorYear !== monthYear || cursorMonth !== monthMonth) {
-      const now = new Date()
-      now.setHours(0, 0, 0, 0)
-      const diffMonths = (cursorYear - now.getFullYear()) * 12 + (cursorMonth - now.getMonth())
-      setMonthOffset(diffMonths)
-    }
-  }, [monthYear, monthMonth])
   const handleToday = useCallback(() => setMonthOffset(0), [])
 
   const handleViewChange = useCallback((mode: 'week' | 'month') => {
@@ -287,7 +273,6 @@ const handleCreateTask = useCallback(async (name: string, dueDate: string, prior
           if (settingsOpen) { onCloseSettings(); return }
           if (selectedTask) { setSelectedTask(null); return }
           setMonthOffset(0)
-          setCursorDate(toDateString(new Date()))
         }}
       />
 
@@ -340,8 +325,6 @@ const handleCreateTask = useCallback(async (name: string, dueDate: string, prior
           onMoveTask={moveTaskToDate}
           categoryColorMap={categoryColorMap}
           selectedTaskId={selectedTask?.id ?? null}
-          cursorDate={cursorDate}
-          onCursorChange={handleCursorChange}
         />
       ) : (
         <WeekView

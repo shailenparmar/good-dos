@@ -1,0 +1,14 @@
+#!/bin/sh
+# Auto-bump version on every push
+
+VERSION_FILE="src/shared/version.ts"
+
+CURRENT=$(grep -o "'[0-9]*'" "$VERSION_FILE" | tr -d "'")
+NEXT=$(printf "%03d" $((10#$CURRENT + 1)))
+
+sed -i '' "s/export const APP_VERSION = '$CURRENT'/export const APP_VERSION = '$NEXT'/" "$VERSION_FILE"
+
+git add "$VERSION_FILE"
+git commit -m "v$NEXT"
+
+echo "version $CURRENT → $NEXT"

@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { toDateString, formatCalendarDay, fuzzyMatch } from '@shared/utils/date'
-import { APP_VERSION } from '@shared/version'
 
 type Step = 'date' | 'name' | 'priority'
 
@@ -409,10 +408,6 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
             <button onClick={onSettings} className="font-mono font-black active:scale-90 flex items-center justify-center uppercase"
               style={{ color: 'hsl(var(--h), var(--s), var(--l))', fontSize: 'clamp(13px, 1.8vw, 20px)', border: `${colorsOpen ? '6px' : '3px'} solid hsla(var(--h), var(--s), var(--l), ${colorsOpen ? 0.7 : 0.2})`, padding: '0 var(--sp-sm-r)' }}>colors</button>
           )}
-          <div className="font-mono flex items-center justify-center"
-            style={{ color: 'hsla(var(--h), var(--s), var(--l), 0.3)', fontSize: '10px', padding: '0 var(--sp-sm-r)' }}>
-            v{APP_VERSION}
-          </div>
         </div>
 
       </div>

@@ -93,8 +93,7 @@ Leader and locked use the same 6px / 0.7 as the typer border and month/week togg
 
 ### Border Collapse
 
-- **MonthView** (`MonthDayCell.tsx`): tasks stack with `marginTop: idx > 0 ? '-3px' : undefined` — overlapping borders for tight spacing.
-- **WeekView** (`DayColumn.tsx`): tasks use `gap: var(--sp-xs)` — no border collapse, small gap instead.
+- **MonthView** and **WeekView**: tasks stack adjacent with no overlap — no negative marginTop.
 - Never use `borderTop: 'none'` — it breaks `aspect-ratio` on the checkbox.
 
 ## Spacing System
@@ -152,8 +151,8 @@ Each task in a day cell renders as `[checkbox][task box]`:
 ### Layout Regions
 
 - **Input Bar** (`TaskInputBar.tsx`) — Top bar with multi-step task wizard (date > name > priority), nav arrows, today button, view toggle, colors button.
-- **Month Grid** (`MonthView.tsx`) — 7-column calendar grid. Today's row gets `2fr` height.
-- **Week Grid** (`WeekView.tsx`) — 7-column day-by-day vertical list.
+- **Month Grid** (`MonthView.tsx`) — Day-name header row (SUN–SAT) + 7-column calendar grid. Today's row gets `2fr` height.
+- **Week Grid** (`WeekView.tsx`) — Day-name header row (SUN–SAT, matching month view) + 7-column day-by-day vertical list. Day name is NOT inside the column cell.
 - **Edit Panel** (`TaskEditPanel.tsx`) — Inline panel below input bar: `[priority] [name input] [typetags] [+] [repeat] [freq] [days] [delete]`.
 - **Color Picker** (`ColorPicker.tsx`) — Inline 4-column strip: `[text SL] [text hue] [bg hue] [bg SL]`.
 
@@ -161,7 +160,7 @@ Each task in a day cell renders as `[checkbox][task box]`:
 
 - **Day Cell** (`MonthDayCell.tsx`) — Single cell in month grid. Watermark number (or "TODAY" at 0.2 opacity), task checkboxes and task boxes.
 - **Checkbox** — Priority-colored square. Click toggles completion (plays sound). X SVG when done.
-- **Task Box** — Rectangle right of checkbox with task text. Click opens edit panel. Selection indicated by daycell outline, not text styling.
+- **Task Box** — Rectangle right of checkbox with task text. Click opens edit panel. Task text goes **900 (black)** on hover and while edit panel is open; 400 at rest.
 - **Breadcrumb** — 6px bordered boxes in input bar showing locked date ("FRI 27") and locked task name.
 
 ### Feedback
@@ -179,7 +178,7 @@ The full task creation sequence through the typer. Three phases:
 
 ### Keyboard Navigation
 
-- **Arrow keys** — Move cursor between day cells in MonthView. When the typer has focus (date step), any arrow key blurs it and hands off to MonthView cursor navigation. Left/right ±1 day, up/down ±7 days. Clamped at grid edges.
+- **Arrow keys** — In date step of typer: left/right cycle dates, up/down jump ±7 days. Outside input: no effect.
 - **Enter** — On selector: locks day and advances to name step. In input: advances wizard step.
 - **Escape** — Unwinds: priority → name → date → blur → colors picker > settings > edit panel > snap to today.
 - **Tab** — Always cycles through dates (even when input unfocused). Shift+Tab goes backward.
