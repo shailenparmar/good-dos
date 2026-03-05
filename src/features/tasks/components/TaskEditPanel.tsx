@@ -84,7 +84,9 @@ export function TaskEditPanel({ task, typetags, onUpdate, onDelete, onRemoveRecu
   const addTypetag = async () => {
     const name = newTagName.trim().toLowerCase()
     if (!name) return
-    await db.typetags.add({ id: generateId(), name })
+    const id = generateId()
+    await db.typetags.add({ id, name })
+    onUpdate(task.id, { categoryId: id })
     setNewTagName('')
     setAddingTag(false)
   }
