@@ -115,7 +115,7 @@ export function MonthDayCell({ date, dateStr, tasks, isToday, isCurrentMonth, fi
             style={{
               color: 'hsl(var(--h), var(--s), var(--l))',
               opacity: 0.2,
-              fontSize: 'clamp(48px, 8vw, 120px)',
+              fontSize: 'clamp(36px, 6vw, 90px)',
               fontWeight: 900,
             }}
           >
@@ -142,7 +142,7 @@ export function MonthDayCell({ date, dateStr, tasks, isToday, isCurrentMonth, fi
               return (
                 <div
                   key={task.id}
-                  className="flex items-stretch min-w-0"
+                  className="flex items-stretch min-w-0 active:scale-90"
                   style={{}}
                   draggable
                   onDragStart={e => handleDragStart(e, task.id)}
@@ -155,6 +155,7 @@ export function MonthDayCell({ date, dateStr, tasks, isToday, isCurrentMonth, fi
                       aspectRatio: '1',
                       backgroundColor: getPriorityColor(task.priority),
                       border: defaultBorder,
+                    borderRight: 'none',
                     }}
                     onClick={e => e.stopPropagation()}
                     onMouseDown={e => {
@@ -175,8 +176,7 @@ export function MonthDayCell({ date, dateStr, tasks, isToday, isCurrentMonth, fi
                     className="flex-1 min-w-0 flex items-center"
                     style={{
                       border: catColor ? `3px solid ${catColor}` : defaultBorder,
-                      borderLeft: 'none',
-                      backgroundColor: catColor ? catColor.replace('hsl(', 'hsla(').replace(')', ', 0.5)') : undefined,
+                      backgroundColor: catColor ?? undefined,
                       padding: pad,
                     }}
                     onClick={e => e.stopPropagation()}

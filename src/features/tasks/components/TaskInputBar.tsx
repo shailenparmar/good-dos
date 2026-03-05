@@ -63,9 +63,10 @@ interface TaskInputBarProps {
   flashMessage?: string | null
   onEscape?: () => void
   onUserType?: () => void
+  onNavigateToDate?: (dateStr: string) => void
 }
 
-export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDateFilterChange, onLockedDateChange, resetKey, monthDates, monthTitle, onSettings, colorsOpen, onPrev, onNext, viewMode, onViewChange, onToday, flashMessage, onEscape, onUserType }: TaskInputBarProps) {
+export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDateFilterChange, onLockedDateChange, resetKey, monthDates, monthTitle, onSettings, colorsOpen, onPrev, onNext, viewMode, onViewChange, onToday, flashMessage, onEscape, onUserType, onNavigateToDate }: TaskInputBarProps) {
   const [step, setStep] = useState<Step>('date')
   const [inputValue, setInputValue] = useState('')
   const [isActive, setIsActive] = useState(false)
@@ -194,7 +195,6 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
       : (currentIdx + (backward ? -1 : 1) + opts.length) % opts.length
     setTabbedDate(opts[nextIdx].value)
     setIsActive(true)
-    inputRef.current?.focus()
   }, [])
 
   // Jump ±7 calendar days from the current tabbedDate (up/down arrows)
@@ -207,7 +207,6 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
       if (opts.find(o => o.value === todayStr)) {
         setTabbedDate(todayStr)
         setIsActive(true)
-        inputRef.current?.focus()
       } else {
         cycleDate(backward)
       }
@@ -220,11 +219,22 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
     if (opts.find(o => o.value === target)) {
       setTabbedDate(target)
       setIsActive(true)
-      inputRef.current?.focus()
     } else {
       cycleDate(backward)
     }
   }, [cycleDate])
+
+  // Spatial arrow-key navigation — pure date arithmetic, no list constraint
+  const navigateByDays = useCallback((days: number) => {
+    const current = tabbedDateRef.current
+    const d = current ? new Date(current + 'T00:00:00') : new Date()
+    d.setHours(0, 0, 0, 0)
+    if (current) d.setDate(d.getDate() + days)
+    const newStr = toDateString(d)
+    setTabbedDate(newStr)
+    setIsActive(true)
+    onNavigateToDate?.(newStr)
+  }, [onNavigateToDate])
 
   // Confirm the currently highlighted date and move to name step
   const confirmDate = useCallback(() => {
@@ -271,8 +281,18 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
         return
       }
 
-      // Any printable key while nothing is focused -> focus the input
+      // Arrow keys / Enter when input is not focused — navigate the date grid
       const el = document.activeElement
+      const inputFocused = el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')
+      if (!inputFocused && stepRef.current === 'date') {
+        if (e.key === 'ArrowRight') { e.preventDefault(); navigateByDays(1); return }
+        if (e.key === 'ArrowLeft') { e.preventDefault(); navigateByDays(-1); return }
+        if (e.key === 'ArrowDown') { e.preventDefault(); navigateByDays(7); return }
+        if (e.key === 'ArrowUp') { e.preventDefault(); navigateByDays(-7); return }
+        if (e.key === 'Enter' && tabbedDateRef.current) { e.preventDefault(); confirmDate(); return }
+      }
+
+      // Any printable key while nothing is focused -> focus the input
       if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || (el as HTMLElement).isContentEditable)) return
       if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
         inputRef.current?.focus()
@@ -280,7 +300,7 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
     }
     window.addEventListener('keydown', handleGlobalKey)
     return () => window.removeEventListener('keydown', handleGlobalKey)
-  }, [cycleDate, cyclePriority])
+  }, [cycleDate, cycleWeek, cyclePriority, confirmDate, navigateByDays])
 
   // Input handler — Enter, Escape, Backspace, Arrow keys (Tab handled globally above)
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -363,8 +383,21 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
         })()}
 
         {lockedName && step === 'priority' && (
-          <div className="flex-shrink-0 flex items-center justify-center font-mono font-black truncate"
-            style={{ padding: '0 var(--sp-lg-r)', maxWidth: 'clamp(100px, 18vw, 200px)', color: 'hsl(var(--h), var(--s), var(--l))', fontSize: 'clamp(13px, 1.8vw, 20px)', border: '6px solid hsla(var(--h), var(--s), var(--l), 0.5)', backgroundColor: 'hsla(var(--h), var(--s), var(--l), 0.1)' }}>
+          <div
+            className="flex-shrink-0 flex items-center justify-center font-mono font-black truncate active:scale-90"
+            style={{ padding: '0 var(--sp-lg-r)', maxWidth: 'clamp(100px, 18vw, 200px)', color: 'hsl(var(--h), var(--s), var(--l))', fontSize: 'clamp(13px, 1.8vw, 20px)', border: '6px solid hsla(var(--h), var(--s), var(--l), 0.5)', backgroundColor: 'hsla(var(--h), var(--s), var(--l), 0.1)', cursor: 'default' }}
+            onClick={() => {
+              setStep('name')
+              setInputValue(lockedName)
+              setLockedName(null)
+              requestAnimationFrame(() => {
+                const input = inputRef.current
+                if (!input) return
+                input.focus()
+                input.setSelectionRange(input.value.length, input.value.length)
+              })
+            }}
+          >
             {lockedName}
           </div>
         )}

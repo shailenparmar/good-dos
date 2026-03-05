@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { db } from '@shared/storage/db'
-import { tagColor, tagColorAlpha } from '../types'
+import { tagColor } from '../types'
 import type { Task, TypeTag, RecurrenceRule } from '../types'
 
 interface TaskEditPanelProps {
@@ -27,7 +27,6 @@ function generateId(): string {
 
 export function TaskEditPanel({ task, typetags, onUpdate, onDelete, onRemoveRecurrence, onClose }: TaskEditPanelProps) {
   const [text, setText] = useState(task.text)
-  const [showRepeat, setShowRepeat] = useState(!!task.recurrence)
   const [addingTag, setAddingTag] = useState(false)
   const [newTagName, setNewTagName] = useState('')
   const nameRef = useRef<HTMLInputElement>(null)
@@ -155,29 +154,10 @@ export function TaskEditPanel({ task, typetags, onUpdate, onDelete, onRemoveRecu
           border: '3px solid hsla(var(--h), var(--s), var(--l), 0.2)',
         }}
       >
-      {/* Single row: priority + name input + typetags + [+] + repeat + freq + days */}
       <div className="flex items-center flex-wrap" style={{ gap: 'var(--sp-sm)' }}>
-        {/* Priority rectangles with labels */}
-        {([0, 1, 2] as const).map(p => (
-          <button
-            key={p}
-            onClick={() => onUpdate(task.id, { priority: p })}
-            className="font-mono font-black active:scale-90 uppercase whitespace-nowrap"
-            style={{
-              backgroundColor: 'transparent',
-              border: task.priority === p
-                ? `6px solid ${PRIORITY_COLORS[p] === 'transparent' ? 'hsl(var(--h), var(--s), var(--l))' : PRIORITY_COLORS[p]}`
-                : '3px solid hsla(var(--h), var(--s), var(--l), 0.2)',
-              padding: '0 var(--sp-sm-r)',
-              fontSize: FONT,
-              color: 'hsl(var(--h), var(--s), var(--l))',
-            }}
-          >
-            {p === 0 ? 'none' : p === 1 ? 'medium' : 'high'}
-          </button>
-        ))}
 
-        {/* Name input (nameedit) */}
+        {/* LEFT */}
+        <div className="flex items-center flex-shrink-0" style={{ gap: 'var(--sp-sm)' }}>
         <input
           ref={nameRef}
           value={text}
@@ -188,17 +168,40 @@ export function TaskEditPanel({ task, typetags, onUpdate, onDelete, onRemoveRecu
             if (e.key === 'Escape') { e.preventDefault(); onClose() }
           }}
           placeholder="task name..."
-          className="min-w-0 bg-transparent outline-none font-mono font-black"
+          size={Math.max(text.length || 10, 10)}
+          className="bg-transparent outline-none font-mono font-black"
           style={{
             color: 'hsl(var(--h), var(--s), var(--l))',
             fontSize: FONT,
             border: '3px solid hsla(var(--h), var(--s), var(--l), 0.2)',
             padding: '0 var(--sp-sm-r)',
-            width: 'clamp(96px, 14.4vw, 192px)',
           }}
         />
 
-        {/* Typetags */}
+        {([0, 1, 2] as const).map(p => (
+          <button
+            key={p}
+            onClick={() => onUpdate(task.id, { priority: p })}
+            className="font-mono font-black active:scale-90 uppercase whitespace-nowrap"
+            style={{
+              color: 'hsl(var(--h), var(--s), var(--l))',
+              border: task.priority === p
+                ? '6px solid hsl(var(--h), var(--s), var(--l))'
+                : '3px solid hsla(var(--h), var(--s), var(--l), 0.2)',
+              backgroundColor: task.priority === p && PRIORITY_COLORS[p] !== 'transparent'
+                ? PRIORITY_COLORS[p]
+                : 'transparent',
+              padding: '0 var(--sp-sm-r)',
+              fontSize: FONT,
+            }}
+          >
+            {p === 0 ? 'none' : p === 1 ? 'medium' : 'high'}
+          </button>
+        ))}
+        </div>
+
+        {/* CENTER */}
+        <div className="flex items-center flex-shrink-0 mx-auto" style={{ gap: 'var(--sp-sm)' }}>
         {typetags.map((tag, i) => {
           const color = tagColor(i)
           return (
@@ -210,7 +213,7 @@ export function TaskEditPanel({ task, typetags, onUpdate, onDelete, onRemoveRecu
               style={{
                 color: 'hsl(var(--h), var(--s), var(--l))',
                 border: `${task.categoryId === tag.id ? '6px' : '3px'} solid ${color}`,
-                backgroundColor: task.categoryId === tag.id ? tagColorAlpha(i, 0.5) : 'transparent',
+                backgroundColor: task.categoryId === tag.id ? tagColor(i) : 'transparent',
                 padding: '0 var(--sp-sm-r)',
                 fontSize: FONT,
               }}
@@ -220,7 +223,6 @@ export function TaskEditPanel({ task, typetags, onUpdate, onDelete, onRemoveRecu
           )
         })}
 
-        {/* Add typetag inline */}
         {addingTag ? (
           <input
             ref={tagInputRef}
@@ -234,7 +236,7 @@ export function TaskEditPanel({ task, typetags, onUpdate, onDelete, onRemoveRecu
               if (!newTagName.trim()) { setAddingTag(false); setNewTagName('') }
             }}
             placeholder="tag name..."
-            className="min-w-0 bg-transparent outline-none font-mono font-black"
+            className="bg-transparent outline-none font-mono font-black"
             style={{
               color: 'hsl(var(--h), var(--s), var(--l))',
               fontSize: FONT,
@@ -257,23 +259,11 @@ export function TaskEditPanel({ task, typetags, onUpdate, onDelete, onRemoveRecu
             + tag
           </button>
         )}
+        </div>
 
-        {/* Repeat toggle */}
-        <button
-          onClick={() => setShowRepeat(s => !s)}
-          className="font-mono font-black active:scale-90 uppercase whitespace-nowrap"
-          style={{
-            color: 'hsl(var(--h), var(--s), var(--l))',
-            border: `${task.recurrence ? '6px' : '3px'} solid hsla(var(--h), var(--s), var(--l), ${task.recurrence ? 1 : 0.2})`,
-            padding: '0 var(--sp-sm-r)',
-            fontSize: FONT,
-          }}
-        >
-          repeat
-        </button>
-
-        {/* Recurrence options — inline after repeat */}
-        {showRepeat && FREQ_OPTIONS.map(f => (
+        {/* RIGHT */}
+        <div className="flex items-center flex-shrink-0 ml-auto" style={{ gap: 'var(--sp-sm)' }}>
+        {FREQ_OPTIONS.map(f => (
           <button
             key={f}
             onClick={() => setFrequency(f)}
@@ -290,8 +280,7 @@ export function TaskEditPanel({ task, typetags, onUpdate, onDelete, onRemoveRecu
           </button>
         ))}
 
-        {/* Day-of-week toggles — inline */}
-        {showRepeat && isCustomWeekly && DAY_LABELS.map((label, i) => {
+        {isCustomWeekly && DAY_LABELS.map((label, i) => {
           const active = task.recurrence?.daysOfWeek?.includes(i) ?? false
           return (
             <button
@@ -310,10 +299,9 @@ export function TaskEditPanel({ task, typetags, onUpdate, onDelete, onRemoveRecu
           )
         })}
 
-        {/* Delete — pushed to far right */}
         <button
           onMouseDown={(e) => { e.stopPropagation(); onDelete(task.id) }}
-          className="font-mono font-black active:scale-90 uppercase whitespace-nowrap ml-auto"
+          className="font-mono font-black active:scale-90 uppercase whitespace-nowrap"
           style={{
             color: 'hsl(var(--h), var(--s), var(--l))',
             border: '3px solid hsla(var(--h), var(--s), var(--l), 0.2)',
@@ -323,6 +311,8 @@ export function TaskEditPanel({ task, typetags, onUpdate, onDelete, onRemoveRecu
         >
           DELETE TASK
         </button>
+        </div>
+
       </div>
       </div>
     </div>

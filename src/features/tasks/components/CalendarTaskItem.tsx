@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { Task } from '../types'
 
 interface CalendarTaskItemProps {
@@ -20,12 +21,13 @@ function getPriorityColor(priority: number): string {
   }
 }
 
-export function CalendarTaskItem({ task, onToggle, onCyclePriority: _onCyclePriority, onClick, onPlaySound, categoryColor, draggable: isDraggable, onDragStart }: CalendarTaskItemProps) {
+export function CalendarTaskItem({ task, onToggle, onCyclePriority: _onCyclePriority, onClick, onPlaySound, categoryColor, isSelected, draggable: isDraggable, onDragStart }: CalendarTaskItemProps) {
+  const [hovered, setHovered] = useState(false)
   const border = '3px solid hsla(var(--h), var(--s), var(--l), 0.2)'
 
   return (
     <div
-      className="flex items-stretch min-w-0"
+      className="flex items-stretch min-w-0 active:scale-90"
       style={{ gap: '0px', cursor: isDraggable ? 'grab' : undefined }}
       draggable={isDraggable}
       onDragStart={onDragStart}
@@ -38,6 +40,7 @@ export function CalendarTaskItem({ task, onToggle, onCyclePriority: _onCyclePrio
           aspectRatio: '1',
           backgroundColor: getPriorityColor(task.priority),
           border,
+          borderRight: 'none',
         }}
         onMouseDown={(e) => {
           e.stopPropagation()
@@ -58,10 +61,11 @@ export function CalendarTaskItem({ task, onToggle, onCyclePriority: _onCyclePrio
         className="flex-1 min-w-0 flex items-center"
         style={{
           border: categoryColor ? `3px solid ${categoryColor}` : border,
-          borderLeft: 'none',
-          backgroundColor: categoryColor ? categoryColor.replace('hsl(', 'hsla(').replace(')', ', 0.5)') : undefined,
+          backgroundColor: categoryColor ?? undefined,
           padding: 'var(--sp-xs) var(--sp-sm)',
         }}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
         onMouseDown={(e) => {
           e.stopPropagation()
           onClick(task)
@@ -73,7 +77,7 @@ export function CalendarTaskItem({ task, onToggle, onCyclePriority: _onCyclePrio
             color: 'hsl(var(--h), var(--s), var(--l))',
             fontSize: 'clamp(11px, 1.3vw, 14px)',
             lineHeight: '1.2',
-            fontWeight: 400,
+            fontWeight: (isSelected || hovered) ? 900 : 400,
           }}
         >
           {task.text || 'untitled'}

@@ -122,16 +122,14 @@ button:focus, button:focus-visible {
   }
 }
 
-/* No hover styles on touch devices */
-@media (pointer: coarse) {
-  * {
-    -webkit-user-select: none !important;
-    user-select: none !important;
-  }
-  input, textarea {
-    -webkit-user-select: text !important;
-    user-select: text !important;
-  }
+/* Nothing is selectable */
+* {
+  -webkit-user-select: none !important;
+  user-select: none !important;
+}
+input, textarea {
+  -webkit-user-select: text !important;
+  user-select: text !important;
 }
 
 /* Input range styling */

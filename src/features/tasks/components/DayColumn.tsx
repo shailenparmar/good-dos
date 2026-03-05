@@ -110,7 +110,7 @@ export function DayColumn({
             style={{
               color: 'hsl(var(--h), var(--s), var(--l))',
               opacity: 0.2,
-              fontSize: 'clamp(48px, 8vw, 120px)',
+              fontSize: 'clamp(36px, 6vw, 90px)',
               fontWeight: 900,
             }}
           >

@@ -9,7 +9,7 @@ import { tagColor } from '../types'
 import type { Task } from '../types'
 import { formatCalendarMonth, getMonthGrid, getWeekDays, toDateString, getDateLabel } from '@shared/utils/date'
 import { getRandomMessage } from '@shared/utils/messages'
-import { lsGetNumber } from '@shared/storage'
+import { lsGet, lsSet, lsGetNumber } from '@shared/storage'
 import { MonthView } from './MonthView'
 import { WeekView } from './WeekView'
 import { TaskEditPanel } from './TaskEditPanel'
@@ -40,7 +40,10 @@ export function CalendarView({ settingsOpen, onCloseSettings }: CalendarViewProp
   useAutoCleanup(tasks, null)
   useRecurring(tasks)
 
-  const [viewMode, setViewMode] = useState<'week' | 'month'>('month')
+  const [viewMode, setViewMode] = useState<'week' | 'month'>(() => {
+    const saved = lsGet('viewMode')
+    return saved === 'week' ? 'week' : 'month'
+  })
   const [monthOffset, setMonthOffset] = useState(0)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [prefillDate, setPrefillDate] = useState<string | null>(null)
@@ -72,6 +75,16 @@ export function CalendarView({ settingsOpen, onCloseSettings }: CalendarViewProp
         const target = e.target as HTMLElement
         if (!target.closest?.('[data-edit-panel]')) {
           setSelectedTask(null)
+        }
+        return
+      }
+
+      // Backspace outside any input — delete selected task
+      if (e.key === 'Backspace') {
+        const target = e.target as HTMLElement
+        if (target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA' && selectedTaskRef.current) {
+          e.preventDefault()
+          deleteTask(selectedTaskRef.current.id).then(() => setSelectedTask(null))
         }
         return
       }
@@ -159,10 +172,19 @@ export function CalendarView({ settingsOpen, onCloseSettings }: CalendarViewProp
   const handlePrev = useCallback(() => setMonthOffset(m => m - 1), [])
   const handleNext = useCallback(() => setMonthOffset(m => m + 1), [])
 
+  const handleNavigateToDate = useCallback((dateStr: string) => {
+    const d = new Date(dateStr + 'T00:00:00')
+    const now = new Date()
+    now.setHours(0, 0, 0, 0)
+    const diffMonths = (d.getFullYear() - now.getFullYear()) * 12 + (d.getMonth() - now.getMonth())
+    setMonthOffset(diffMonths)
+  }, [])
+
   const handleToday = useCallback(() => setMonthOffset(0), [])
 
   const handleViewChange = useCallback((mode: 'week' | 'month') => {
     setViewMode(mode)
+    lsSet('viewMode', mode)
     setMonthOffset(0)
   }, [])
 
@@ -268,6 +290,7 @@ const handleCreateTask = useCallback(async (name: string, dueDate: string, prior
         onToday={handleToday}
         flashMessage={flashMessage}
         onUserType={() => setSelectedTask(null)}
+        onNavigateToDate={handleNavigateToDate}
         onEscape={() => {
           if (colorsOpen) { setColorsOpen(false); return }
           if (settingsOpen) { onCloseSettings(); return }
@@ -294,10 +317,9 @@ const handleCreateTask = useCallback(async (name: string, dueDate: string, prior
           className="flex-shrink-0 grid"
           style={{
             gap: 'var(--sp-sm)',
-            padding: '0 var(--sp-md) var(--sp-md) var(--sp-md)',
+            padding: 'var(--sp-xs) var(--sp-md)',
             gridTemplateColumns: '1fr 1fr 1fr 1fr',
-            height: 'calc(clamp(22px, 3vw, 36px) + var(--sp-md-r) * 2 + 8px + 24px)',
-            borderBottom: '3px solid hsla(var(--h), var(--s), var(--l), 0.1)',
+            height: 'calc(clamp(22px, 3vw, 36px) + var(--sp-xs-r) * 2 + 8px + 24px)',
           }}
         >
           <ColorPicker type="text" part="sl" />

@@ -164,7 +164,7 @@ export function ColorPicker({ type, part }: ColorPickerProps) {
             left: needleLeft,
             width: `${needleWidth}px`,
             transform: 'translateX(-50%)',
-            backgroundColor: 'rgba(0, 0, 0, 1)',
+            backgroundColor: 'rgba(0, 0, 0, 0.6)',
           }}
         />
       </div>
@@ -206,6 +206,7 @@ export function ColorPicker({ type, part }: ColorPickerProps) {
           top: dotTop,
           transform: 'translate(-50%, -50%)',
           backgroundColor: isText ? getBgColor() : getColor(),
+          opacity: 0.6,
         }}
       />
     </div>

@@ -140,9 +140,9 @@ Each task in a day cell renders as `[checkbox][task box]`:
 ```
 
 - **Row**: `flex items-stretch` — checkbox and task box stretch to equal height.
-- **Checkbox**: square (`width: sqSize`, `aspect-ratio: 1`), `flex-shrink-0`, `backgroundColor` = priority color, `border: 3px` at 0.2 alpha, X SVG when completed. Click toggles completion + plays sound.
-- **Task box**: `flex-1`, `borderLeft: 'none'` (shares border with checkbox), `backgroundColor` = typetag color at low alpha. Click opens TaskEditPanel. Height stretches to match checkbox.
-- **Border collapse**: subsequent tasks omit `borderTop` on both checkbox and task box.
+- **Checkbox**: square (`width: sqSize`, `aspect-ratio: 1`), `flex-shrink-0`, `backgroundColor` = priority color, `border: 3px` at 0.2 alpha, `borderRight: none`. X SVG when completed. Click toggles completion + plays sound.
+- **Task box**: `flex-1`, full border on all sides (including left — checkbox omits right border so there's one clean shared edge). `backgroundColor` = typetag color at 100% opacity. Click opens TaskEditPanel.
+- **Task text**: 400 weight at rest, 900 on hover or when edit panel is open.
 - **No overflow-hidden on task container** — the cell handles clipping; task container must not clip its children.
 - **Checkbox sizes scale with density**: <=3 tasks: `clamp(18px, 2.5vw, 28px)`, 4-5: `clamp(14px, 2vw, 22px)`, 6+: `clamp(10px, 1.4vw, 16px)`.
 
@@ -151,8 +151,8 @@ Each task in a day cell renders as `[checkbox][task box]`:
 ### Layout Regions
 
 - **Input Bar** (`TaskInputBar.tsx`) — Top bar with multi-step task wizard (date > name > priority), nav arrows, today button, view toggle, colors button.
-- **Month Grid** (`MonthView.tsx`) — Day-name header row (SUN–SAT) + 7-column calendar grid. Today's row gets `2fr` height.
-- **Week Grid** (`WeekView.tsx`) — Day-name header row (SUN–SAT, matching month view) + 7-column day-by-day vertical list. Day name is NOT inside the column cell.
+- **Month Grid** (`MonthView.tsx`) — Day-name header row (SUN–SAT) + 7-column calendar grid. Today's row gets `2fr` height. Day watermark numbers at `clamp(36px, 6vw, 90px)`.
+- **Week Grid** (`WeekView.tsx`) — Day-name header row (SUN–SAT, matching month view) + 7-column day-by-day vertical list. Day name is NOT inside the column cell. Day watermark numbers at `clamp(36px, 6vw, 90px)`.
 - **Edit Panel** (`TaskEditPanel.tsx`) — Inline panel below input bar: `[priority] [name input] [typetags] [+] [repeat] [freq] [days] [delete]`.
 - **Color Picker** (`ColorPicker.tsx`) — Inline 4-column strip: `[text SL] [text hue] [bg hue] [bg SL]`.
 
@@ -160,7 +160,8 @@ Each task in a day cell renders as `[checkbox][task box]`:
 
 - **Day Cell** (`MonthDayCell.tsx`) — Single cell in month grid. Watermark number (or "TODAY" at 0.2 opacity), task checkboxes and task boxes.
 - **Checkbox** — Priority-colored square. Click toggles completion (plays sound). X SVG when done.
-- **Task Box** — Rectangle right of checkbox with task text. Click opens edit panel. Task text goes **900 (black)** on hover and while edit panel is open; 400 at rest.
+- **Task Box** — Rectangle right of checkbox. Click opens edit panel. Text goes 900 on hover/selected, 400 at rest. `active:scale-90` on the whole task row (checkbox + box together).
+- **TaskEditPanel** — Flat `flex-wrap` row: name input (auto-sizes via `size` attr) → priority → tags → +tag → freq options → delete. Wraps to next line when name is long. View mode (week/month) persists to localStorage.
 - **Breadcrumb** — 6px bordered boxes in input bar showing locked date ("FRI 27") and locked task name.
 
 ### Feedback
@@ -178,10 +179,12 @@ The full task creation sequence through the typer. Three phases:
 
 ### Keyboard Navigation
 
-- **Arrow keys** — In date step of typer: left/right cycle dates, up/down jump ±7 days. Outside input: no effect.
+- **Arrow keys** — Pure date arithmetic: left/right ±1 day, up/down ±7 days. Works whether or not input is focused. First press with no date selected lands on today. Auto-navigates the month view when crossing a month boundary.
+- **Backspace** — When a task's edit panel is open and no input is focused: deletes the task.
 - **Enter** — On selector: locks day and advances to name step. In input: advances wizard step.
 - **Escape** — Unwinds: priority → name → date → blur → colors picker > settings > edit panel > snap to today.
-- **Tab** — Always cycles through dates (even when input unfocused). Shift+Tab goes backward.
+- **Tab** — Cycles through dates without focusing the input. Enter confirms the highlighted date and then focuses input for name entry. Shift+Tab goes backward.
+- **Click name breadcrumb** — Returns to name step with text restored and cursor at end.
 
 ## Responsive Behavior
 
