@@ -67,6 +67,17 @@ export function CalendarView({ settingsOpen, onCloseSettings }: CalendarViewProp
   // and only lets Esc through once it's fully reset
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Printable key while edit panel is open → close panel so typing goes to the typer
+      // (unless the keystroke is from inside the panel's own editable elements)
+      if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        const target = e.target as HTMLElement
+        const insidePanel = !!target.closest?.('[data-edit-panel]')
+        if (!insidePanel && selectedTaskRef.current) {
+          setSelectedTask(null)
+        }
+        return
+      }
+
       if (e.key !== 'Escape') return
       if (e.repeat) return
 
@@ -153,9 +164,6 @@ export function CalendarView({ settingsOpen, onCloseSettings }: CalendarViewProp
 
   const handleCursorChange = useCallback((dateStr: string) => {
     setCursorDate(dateStr)
-    // Cursor acts as day-select — update breadcrumb
-    setLockedDate(dateStr)
-    setPrefillDate(dateStr)
     // If cursor moves to a different month, navigate there
     const d = new Date(dateStr + 'T00:00:00')
     const cursorYear = d.getFullYear()

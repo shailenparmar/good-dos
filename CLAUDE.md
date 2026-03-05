@@ -82,9 +82,9 @@ When the user says **this**, they mean **that** in code:
 | **typer** | The main text input at the top of the screen | `TaskInputBar.tsx`, the `<input>` element |
 | **daybc** | The locked date breadcrumb chip (e.g. "FRI 27") shown after selecting a day | The `lockedDate` / `lockedDateLabel` div in `TaskInputBar` |
 | **taskbc** | The locked task name breadcrumb chip shown after typing a name | The `lockedName` div in `TaskInputBar` |
-| **date step** | First step of task creation — pick a day | `step === 'date'` |
-| **name step** | Second step — type the task name | `step === 'name'` |
-| **priority step** | Third step — pick none/yellow/red | `step === 'priority'` |
+| **aim** / **aim phase** | First step of task creation — type letters to filter dates (e.g. "th" shows all Thursdays) | `step === 'date'` |
+| **name** / **name phase** | Second step — type the task name | `step === 'name'` |
+| **flame** / **flame phase** | Third step — set importance: none / yellow / red | `step === 'priority'` |
 
 ### Color Picker
 | Term | Meaning | Component / Code |
@@ -120,7 +120,7 @@ Any change to one view MUST be mirrored in the other. The shared rules:
 Both views render tasks as **`[square checkbox][task text box]`**:
 - **Checkbox**: `aspect-ratio: 1`, `flex-shrink-0`, fill = `getPriorityColor(priority)`, border = `0.2` default. X SVG inside (strokeWidth 12, inset 15→85) when completed.
 - **Task text box**: `flex-1 min-w-0`, border = `0.2` default, `borderLeft: none`. Typetag color shown as **background fill** (`catColor + '30'`). Font mono, weight 400.
-- **Row layout**: Tasks stack with `marginTop: -3px` (overlapping borders) for tight spacing.
+- **Row layout**: MonthView stacks tasks with `marginTop: -3px` (overlapping borders). WeekView uses `gap: var(--sp-xs)` between tasks (no border collapse).
 - **Month** renders inline in `MonthDayCell.tsx`. **Week** uses `CalendarTaskItem.tsx` in `DayColumn.tsx`.
 
 ### Click Behavior
@@ -129,10 +129,16 @@ Both views render tasks as **`[square checkbox][task text box]`**:
 - **Checkbox click**: plays sound + toggles complete.
 - **Text click**: toggles edit panel (click same task = close).
 
-### Highlight System (dark cell border, no inset shadows)
-All daycell highlights use the same treatment: cell `border` all 4 sides at full opacity (`3px solid hsl(var(--h), var(--s), var(--l))`).
-States: locked date, cursor, filter match, selected task in cell.
-Drag-over is the only exception (uses `inset 0 0 0 6px` at full opacity).
+### Highlight System (inset box-shadow, no border overlays, no fills)
+All daycell highlights use `inset 0 0 0 6px` box-shadow. No border overlay divs, no background fills.
+
+| State | Shadow | Alpha |
+|-------|--------|-------|
+| Leader (active filter) | `inset 0 0 0 6px` | 0.7 |
+| Locked date | `inset 0 0 0 6px` | 0.7 |
+| Selected task in cell | `inset 0 0 0 6px` | 0.7 |
+| Candidate (other matches) | `inset 0 0 0 6px` | 0.2 |
+| Drag-over | `inset 0 0 0 6px` | 1.0 |
 
 ### Date Options for Input Bar
 Both views provide date options sorted **today-first** (closest future dates first, then past). Never start from the leftmost/earliest day of the period.
@@ -154,9 +160,8 @@ Both views receive and forward: `onToggle`, `onCyclePriority`, `onTaskClick`, `o
 - **No transitions.** Everything instant.
 - **Two opacity tiers.** 1 (full) or 0.2 (watermark). No in-between.
 - **Two border alphas.** 1 (active/selected) or 0.2 (inactive/default).
-- **Three border widths:** THICK (18px) for main input/modals, MEDIUM (9-12px) for calendar cells, NORMAL (3px) for everything else.
-- **Selection indicator:** 6px border for selected items within a group (priority, category, recurrence).
-- **Font weight:** Always bold (700) or black (900). Never regular.
+- **Three border widths:** THICK (12px) for flash message only, SELECTION (6px) for typer/breadcrumbs/daycell highlights/active toggle buttons, NORMAL (3px) for everything else.
+- **Font weight:** Bold (700) or black (900) for UI chrome. Task text at rest is 400 (regular).
 - **Placeholder text:** Styled via `::placeholder` in `index.css` — theme color at 0.2 alpha (not browser default gray).
 
 ## Spacing System
@@ -188,7 +193,8 @@ Single-row layout: `[priority none|med|high] [name input] [typetags...] [+ tag] 
 
 - Placeholder: `"type a day"` (date step), `"task..."` (name step), `"none / yellow / red"` (priority step)
 - Supports fuzzy matching: `"tue"` → all Tuesdays, `"18"` → day 18, `"tu25"` → Tue 25, `"today"` / `"tom"` → today/tomorrow
-- Tab cycles through days; Enter selects the highlighted/filtered date
+- Tab cycles through filtered dates; Enter confirms the selected date
+- **Arrow keys in date step** blur the input and hand off to MonthView cursor navigation (arrow keys move the cursor cell; Enter on cursor locks the date)
 
 ## Data Models
 
@@ -256,12 +262,14 @@ Defaults live in three places (must stay in sync):
 
 ## Version
 
-Stored in `src/shared/version.ts` as `APP_VERSION`. Currently `0.1.0`.
+Stored in `src/shared/version.ts` as `APP_VERSION`. Currently `'016'` (string format, not semver — increment as needed).
 
 ## Important Implementation Notes
 
 - **`toDateString()`** in `date.ts` uses local time formatting (getFullYear/getMonth/getDate), NOT `toISOString()` (UTC). This prevents timezone-related date shifts.
 - **Event handlers on interactive elements inside panels with click-outside listeners** must use `onMouseDown` + `e.stopPropagation()`, not `onClick`. The click-outside handler fires on `mousedown` at the document level and can unmount the panel before `click` fires.
+- **Cursor vs locked date are decoupled.** Arrow key navigation moves `cursorDate` (visual indicator in month grid) but does NOT update `lockedDate` or `prefillDate`. User must press Enter to lock the cursored date.
+- **TaskEditPanel does not auto-focus on open.** CalendarView sets `selectedTask` on create/click, opening the panel, but focus stays in the input bar.
 
 ## Style Guide Auto-Update Workflow
 

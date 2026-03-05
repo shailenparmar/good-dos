@@ -265,9 +265,9 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
     }
 
     if (step === 'date') {
-      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
         e.preventDefault()
-        cycleDate(e.key === 'ArrowUp')
+        inputRef.current?.blur() // hand off to cursor nav in MonthView
       } else if (e.key === 'Enter') {
         e.preventDefault()
         confirmDate()

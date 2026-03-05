@@ -87,7 +87,9 @@ Leader and locked use the same 6px / 0.7 as the typer border and month/week togg
 
 ### Border Collapse
 
-Adjacent tasks in a day cell share borders: first task has full border, subsequent tasks have `borderTop: 'none'`. Never use negative margins with semi-transparent borders (causes opacity doubling).
+- **MonthView** (`MonthDayCell.tsx`): tasks stack with `marginTop: idx > 0 ? '-3px' : undefined` — overlapping borders for tight spacing.
+- **WeekView** (`DayColumn.tsx`): tasks use `gap: var(--sp-xs)` — no border collapse, small gap instead.
+- Never use `borderTop: 'none'` — it breaks `aspect-ratio` on the checkbox.
 
 ## Spacing System
 
@@ -171,7 +173,7 @@ The full task creation sequence through the typer. Three phases:
 
 ### Keyboard Navigation
 
-- **Arrow keys** — Move selector between day cells during aim (date step). First press spawns on today. Left/right ±1 day, up/down ±7 days. Clamped at grid edges.
+- **Arrow keys** — Move cursor between day cells in MonthView. When the typer has focus (date step), any arrow key blurs it and hands off to MonthView cursor navigation. Left/right ±1 day, up/down ±7 days. Clamped at grid edges.
 - **Enter** — On selector: locks day and advances to name step. In input: advances wizard step.
 - **Escape** — Unwinds: priority → name → date → blur → colors picker > settings > edit panel > snap to today.
 - **Tab** — Always cycles through dates (even when input unfocused). Shift+Tab goes backward.
