@@ -164,9 +164,9 @@ export function TaskEditPanel({ task, typetags, onUpdate, onDelete, onRemoveRecu
             onClick={() => onUpdate(task.id, { priority: p })}
             className="font-mono font-black active:scale-90 uppercase whitespace-nowrap"
             style={{
-              backgroundColor: PRIORITY_COLORS[p],
+              backgroundColor: 'transparent',
               border: task.priority === p
-                ? '6px solid hsl(var(--h), var(--s), var(--l))'
+                ? `6px solid ${PRIORITY_COLORS[p] === 'transparent' ? 'hsl(var(--h), var(--s), var(--l))' : PRIORITY_COLORS[p]}`
                 : '3px solid hsla(var(--h), var(--s), var(--l), 0.2)',
               padding: '0 var(--sp-sm-r)',
               fontSize: FONT,
