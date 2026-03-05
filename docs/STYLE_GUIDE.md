@@ -50,9 +50,11 @@ Used as checkbox fill (`backgroundColor`):
 ### TypeTag Colors
 
 Fixed palette in `TAG_COLORS` (`types.ts`), accessed via `tagColor(index)`:
-- Blue `hsl(210, 70%, 55%)`, Green `hsl(150, 60%, 45%)`, Purple `hsl(270, 60%, 55%)`, Teal `hsl(180, 60%, 45%)`, Pink `hsl(320, 60%, 55%)`, Indigo `hsl(240, 55%, 55%)`
+- Orange `hsl(28, 85%, 55%)`, Lime `hsl(85, 65%, 42%)`, Teal `hsl(175, 65%, 43%)`, Blue `hsl(215, 75%, 58%)`, Purple `hsl(270, 65%, 58%)`, Rose `hsl(325, 65%, 55%)`
+- Hues spaced ~60° apart for clear visual distinction
 - Cycles for index > 5
-- Applied as task box `backgroundColor` with `+ '30'` hex alpha suffix
+- Applied as task box `backgroundColor` with `+'80'` hex alpha (~50% opacity) — fills the box visibly
+- Tag buttons in edit panel: colored border only; text is always theme color
 
 ### Border Alphas
 
