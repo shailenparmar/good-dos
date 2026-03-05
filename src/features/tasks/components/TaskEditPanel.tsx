@@ -208,7 +208,7 @@ export function TaskEditPanel({ task, typetags, onUpdate, onDelete, onRemoveRecu
               onKeyDown={e => { if (e.key === 'Backspace') { e.preventDefault(); deleteTypetag(tag.id) } }}
               className="font-mono font-black active:scale-90 uppercase whitespace-nowrap"
               style={{
-                color,
+                color: 'hsl(var(--h), var(--s), var(--l))',
                 border: `${task.categoryId === tag.id ? '6px' : '3px'} solid ${color}`,
                 backgroundColor: task.categoryId === tag.id ? tagColor(i) + '26' : 'transparent',
                 padding: '0 var(--sp-sm-r)',
