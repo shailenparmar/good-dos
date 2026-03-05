@@ -281,6 +281,7 @@ const handleCreateTask = useCallback(async (name: string, dueDate: string, prior
         onViewChange={handleViewChange}
         onToday={handleToday}
         flashMessage={flashMessage}
+        onUserType={() => setSelectedTask(null)}
         onEscape={() => {
           if (colorsOpen) { setColorsOpen(false); return }
           if (settingsOpen) { onCloseSettings(); return }

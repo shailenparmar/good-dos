@@ -63,9 +63,10 @@ interface TaskInputBarProps {
   onToday?: () => void
   flashMessage?: string | null
   onEscape?: () => void
+  onUserType?: () => void
 }
 
-export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDateFilterChange, onLockedDateChange, resetKey, monthDates, monthTitle, onSettings, colorsOpen, onPrev, onNext, viewMode, onViewChange, onToday, flashMessage, onEscape }: TaskInputBarProps) {
+export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDateFilterChange, onLockedDateChange, resetKey, monthDates, monthTitle, onSettings, colorsOpen, onPrev, onNext, viewMode, onViewChange, onToday, flashMessage, onEscape, onUserType }: TaskInputBarProps) {
   const [step, setStep] = useState<Step>('date')
   const [inputValue, setInputValue] = useState('')
   const [isActive, setIsActive] = useState(false)
@@ -366,7 +367,7 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
             <input
               ref={inputRef}
               value={inputValue}
-              onChange={e => setInputValue(e.target.value)}
+              onChange={e => { setInputValue(e.target.value); onUserType?.() }}
               onKeyDown={handleKeyDown}
               onFocus={activate}
               onBlur={() => {
