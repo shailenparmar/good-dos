@@ -187,10 +187,11 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
     if (opts.length === 0) return
     const current = tabbedDateRef.current
     const currentIdx = current ? opts.findIndex(o => o.value === current) : -1
-    // Always start at index 0 (or last if shift-tab) on first press.
-    // No special-casing for today — just cycle through whatever is in opts.
+    // First press: land on today if visible, otherwise first/last
+    const todayStr = toDateString(new Date())
+    const todayIdx = opts.findIndex(o => o.value === todayStr)
     const nextIdx = currentIdx === -1
-      ? (backward ? opts.length - 1 : 0)
+      ? (backward ? opts.length - 1 : (todayIdx !== -1 ? todayIdx : 0))
       : (currentIdx + (backward ? -1 : 1) + opts.length) % opts.length
     setTabbedDate(opts[nextIdx].value)
     setIsActive(true)
@@ -200,7 +201,19 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
   // Jump ±7 calendar days from the current tabbedDate (up/down arrows)
   const cycleWeek = useCallback((backward: boolean) => {
     const current = tabbedDateRef.current
-    if (!current) { cycleDate(backward); return }
+    if (!current) {
+      // First press: start from today if visible, else fall back to linear cycle
+      const todayStr = toDateString(new Date())
+      const opts = filteredDatesRef.current
+      if (opts.find(o => o.value === todayStr)) {
+        setTabbedDate(todayStr)
+        setIsActive(true)
+        inputRef.current?.focus()
+      } else {
+        cycleDate(backward)
+      }
+      return
+    }
     const d = new Date(current + 'T00:00:00')
     d.setDate(d.getDate() + (backward ? -7 : 7))
     const target = toDateString(d)

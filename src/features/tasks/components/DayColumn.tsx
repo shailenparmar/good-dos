@@ -61,7 +61,6 @@ export function DayColumn({
     }
   }, [dateStr, onMoveTask])
 
-  // Highlight via inset box-shadow (same pattern as MonthDayCell)
   let highlightShadow = 'none'
   if (isLockedDate) {
     highlightShadow = 'inset 0 0 0 12px hsla(var(--h), var(--s), var(--l), 0.7)'
@@ -69,25 +68,61 @@ export function DayColumn({
     highlightShadow = 'inset 0 0 0 12px hsla(var(--h), var(--s), var(--l), 0.7)'
   } else if (isHighlighted) {
     highlightShadow = 'inset 0 0 0 6px hsla(var(--h), var(--s), var(--l), 0.6)'
-  } else if (isToday) {
-    highlightShadow = 'inset 0 0 0 3px hsla(var(--h), var(--s), var(--l), 0.2)'
+  }
+
+  let bgColor = 'transparent'
+  if (isLockedDate) {
+    bgColor = 'hsla(var(--h), var(--s), var(--l), 0.2)'
+  } else if (isHighlighted && isActiveHighlight) {
+    bgColor = 'hsla(var(--h), var(--s), var(--l), 0.2)'
+  } else if (isHighlighted) {
+    bgColor = 'hsla(var(--h), var(--s), var(--l), 0.1)'
   }
 
   return (
     <div
-      className="flex flex-col min-w-0 h-full"
+      className="relative flex flex-col min-w-0 h-full overflow-hidden"
       style={{
         boxShadow: isDragOver ? 'inset 0 0 0 6px hsl(var(--h), var(--s), var(--l))' : highlightShadow,
-        backgroundColor: isDragOver ? 'hsla(var(--h), var(--s), var(--l), 0.15)' : undefined,
+        backgroundColor: isDragOver ? 'hsla(var(--h), var(--s), var(--l), 0.25)' : bgColor,
         borderTop: '3px solid hsla(var(--h), var(--s), var(--l), 0.1)',
       }}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
+      {/* Watermark — large translucent day number / TODAY */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none overflow-hidden">
+        {isToday ? (
+          <div
+            className="flex justify-between font-mono font-black leading-none"
+            style={{
+              color: 'hsl(var(--h), var(--s), var(--l))',
+              opacity: 0.2,
+              width: '86%',
+              fontSize: 'clamp(24px, 4vw, 64px)',
+            }}
+          >
+            {'TODAY'.split('').map((ch, i) => <span key={i}>{ch}</span>)}
+          </div>
+        ) : (
+          <span
+            className="font-mono leading-none"
+            style={{
+              color: 'hsl(var(--h), var(--s), var(--l))',
+              opacity: 0.2,
+              fontSize: 'clamp(48px, 8vw, 120px)',
+              fontWeight: 900,
+            }}
+          >
+            {dayNum}
+          </span>
+        )}
+      </div>
+
       {/* Header */}
       <div
-        className="flex items-baseline flex-shrink-0"
+        className="relative z-10 flex items-baseline flex-shrink-0"
         style={{ gap: 'var(--sp-sm)', padding: 'var(--sp-sm) var(--sp-sm)' }}
       >
         <span
@@ -105,23 +140,24 @@ export function DayColumn({
       </div>
 
       {/* Tasks */}
-      <div className="overflow-y-auto scrollbar-hide flex flex-col" style={{ padding: 'var(--sp-xs)', gap: 'var(--sp-xs)' }}>
-        {tasks.map(task => (
-          <CalendarTaskItem
-            key={task.id}
-            task={task}
-            onToggle={onToggle}
-            onCyclePriority={onCyclePriority}
-            onClick={onTaskClick}
-            onPlaySound={onPlaySound}
-            categoryColor={task.categoryId ? categoryColorMap?.[task.categoryId] : undefined}
-            isSelected={selectedTaskId === task.id}
-            draggable
-            onDragStart={e => {
-              e.dataTransfer.setData('text/task-id', task.id)
-              e.dataTransfer.effectAllowed = 'move'
-            }}
-          />
+      <div className="relative z-10 overflow-y-auto scrollbar-hide flex flex-col" style={{ padding: 'var(--sp-xs)' }}>
+        {tasks.map((task, idx) => (
+          <div key={task.id} style={{ marginTop: idx > 0 ? '-3px' : undefined }}>
+            <CalendarTaskItem
+              task={task}
+              onToggle={onToggle}
+              onCyclePriority={onCyclePriority}
+              onClick={onTaskClick}
+              onPlaySound={onPlaySound}
+              categoryColor={task.categoryId ? categoryColorMap?.[task.categoryId] : undefined}
+              isSelected={selectedTaskId === task.id}
+              draggable
+              onDragStart={e => {
+                e.dataTransfer.setData('text/task-id', task.id)
+                e.dataTransfer.effectAllowed = 'move'
+              }}
+            />
+          </div>
         ))}
       </div>
 
