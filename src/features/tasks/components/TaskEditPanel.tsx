@@ -321,7 +321,7 @@ export function TaskEditPanel({ task, typetags, onUpdate, onDelete, onRemoveRecu
             fontSize: FONT,
           }}
         >
-          delete
+          DELETE TASK
         </button>
       </div>
       </div>
