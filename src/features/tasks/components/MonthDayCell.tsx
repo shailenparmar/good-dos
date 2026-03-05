@@ -180,7 +180,7 @@ export function MonthDayCell({ date, dateStr, tasks, isToday, isCurrentMonth, fi
                     style={{
                       border: catColor ? `3px solid ${catColor}` : defaultBorder,
                       borderLeft: 'none',
-                      backgroundColor: catColor ? catColor + '80' : undefined,
+                      backgroundColor: catColor ? catColor.replace('hsl(', 'hsla(').replace(')', ', 0.5)') : undefined,
                       padding: pad,
                     }}
                     onClick={e => e.stopPropagation()}

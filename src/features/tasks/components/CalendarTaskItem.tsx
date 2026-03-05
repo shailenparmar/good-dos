@@ -59,7 +59,7 @@ export function CalendarTaskItem({ task, onToggle, onCyclePriority: _onCyclePrio
         style={{
           border: categoryColor ? `3px solid ${categoryColor}` : border,
           borderLeft: 'none',
-          backgroundColor: categoryColor ? categoryColor + '80' : undefined,
+          backgroundColor: categoryColor ? categoryColor.replace('hsl(', 'hsla(').replace(')', ', 0.5)') : undefined,
           padding: 'var(--sp-xs) var(--sp-sm)',
         }}
         onMouseDown={(e) => {

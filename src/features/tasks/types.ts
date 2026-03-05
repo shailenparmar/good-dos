@@ -38,3 +38,7 @@ const TAG_COLORS = [
 export function tagColor(index: number): string {
   return TAG_COLORS[index % TAG_COLORS.length]
 }
+
+export function tagColorAlpha(index: number, alpha: number): string {
+  return tagColor(index).replace('hsl(', 'hsla(').replace(')', `, ${alpha})`)
+}
