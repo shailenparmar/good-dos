@@ -22,9 +22,10 @@ interface MonthViewProps {
   onMoveTask?: (taskId: string, newDate: string) => void
   categoryColorMap?: Record<string, string>
   selectedTaskId?: string | null
+  onTaskHover?: (taskId: string | null) => void
 }
 
-export function MonthView({ year, month, getTasksForDate, onToggle, onCyclePriority, onTaskClick, onDayClick, onPlaySound, highlightedDates, activeHighlight, lockedDate, onPrev, onNext, onMoveTask, categoryColorMap, selectedTaskId }: MonthViewProps) {
+export function MonthView({ year, month, getTasksForDate, onToggle, onCyclePriority, onTaskClick, onDayClick, onPlaySound, highlightedDates, activeHighlight, lockedDate, onPrev, onNext, onMoveTask, categoryColorMap, selectedTaskId, onTaskHover }: MonthViewProps) {
   const grid = getMonthGrid(year, month)
   const today = new Date()
   today.setHours(0, 0, 0, 0)
@@ -123,6 +124,7 @@ export function MonthView({ year, month, getTasksForDate, onToggle, onCyclePrior
                 onMoveTask={onMoveTask}
                 categoryColorMap={categoryColorMap}
                 selectedTaskId={selectedTaskId}
+                onTaskHover={onTaskHover}
               />
             )
           })

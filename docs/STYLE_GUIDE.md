@@ -73,8 +73,8 @@ Three tiers by element type:
 
 | Tier | Width | Used For |
 |------|-------|----------|
-| **THICK** | 12px | Flash message |
-| **SELECTION** | 6px | Main input box (typer), breadcrumbs, selected priority/typetag/recurrence buttons, view toggle (active), colors button (active), daycell highlights (leader/locked/selected) |
+| **THICK** | 12px | Flash message only |
+| **SELECTION** | 6px | Main input box (typer), breadcrumbs, selected priority/typetag/recurrence buttons, view toggle (active), colors button (active), daycell highlights (leader/locked), task edit panel date arrows |
 | **NORMAL** | 3px | Everything else — checkboxes, task boxes, grid lines, edit panel, buttons, nav arrows |
 
 ### Highlight System (inset box-shadow, no border overlays, no fills)
@@ -83,13 +83,13 @@ All daycell highlights use inset box-shadow at 6px. No border overlay divs. No b
 
 | State | Shadow | Alpha |
 |-------|--------|-------|
-| **Leader** (active filter match) | `inset 0 0 0 6px` | 0.7 |
-| **Locked date** | `inset 0 0 0 6px` | 0.7 |
-| **Selected task in cell** | `inset 0 0 0 6px` | 0.7 |
+| **Leader** (active filter match during aim) | `inset 0 0 0 6px` | 0.7 |
+| **Locked date** (true SELECT) | `inset 0 0 0 6px` | 0.7 |
+| **Seek mode** (Tab/arrow browsing, no text) | `inset 0 0 0 6px` | 0.2 |
 | **Candidate** (other filter matches) | `inset 0 0 0 6px` | 0.2 |
 | **Drag-over** | `inset 0 0 0 6px` | 1.0 |
 
-Leader and locked use the same 6px / 0.7 as the typer border and month/week toggle — visually linked.
+Seek mode (Tab/arrow without typing) uses 0.2 — it's not a committed selection, just browsing. Only locked date and aim leader get 0.7.
 
 ### Border Collapse
 
@@ -140,8 +140,8 @@ Each task in a day cell renders as `[checkbox][task box]`:
 ```
 
 - **Row**: `flex items-stretch` — checkbox and task box stretch to equal height.
-- **Checkbox**: square (`width: sqSize`, `aspect-ratio: 1`), `flex-shrink-0`, `backgroundColor` = priority color, `border: 3px` at 0.2 alpha, `borderRight: none`. X SVG when completed. Click toggles completion + plays sound.
-- **Task box**: `flex-1`, full border on all sides (including left — checkbox omits right border so there's one clean shared edge). `backgroundColor` = typetag color at 100% opacity. Click opens TaskEditPanel.
+- **Checkbox**: square (`width: sqSize`, `aspect-ratio: 1`), `flex-shrink-0`, `backgroundColor` = priority color, full 4-wall `border: 3px` at 0.2 alpha. X SVG when completed. Click toggles completion + plays sound.
+- **Task box**: `flex-1`, full 4-wall border, `marginLeft: -3px` to collapse the shared border with the checkbox. `backgroundColor` = typetag color at 100% opacity. Click opens TaskEditPanel.
 - **Task text**: 400 weight at rest, 900 on hover or when edit panel is open.
 - **No overflow-hidden on task container** — the cell handles clipping; task container must not clip its children.
 - **Checkbox sizes scale with density**: <=3 tasks: `clamp(18px, 2.5vw, 28px)`, 4-5: `clamp(14px, 2vw, 22px)`, 6+: `clamp(10px, 1.4vw, 16px)`.
@@ -153,7 +153,7 @@ Each task in a day cell renders as `[checkbox][task box]`:
 - **Input Bar** (`TaskInputBar.tsx`) — Top bar with multi-step task wizard (date > name > priority), nav arrows, today button, view toggle, colors button.
 - **Month Grid** (`MonthView.tsx`) — Day-name header row (SUN–SAT) + 7-column calendar grid. Today's row gets `2fr` height. Day watermark numbers at `clamp(36px, 6vw, 90px)`.
 - **Week Grid** (`WeekView.tsx`) — Day-name header row (SUN–SAT, matching month view) + 7-column day-by-day vertical list. Day name is NOT inside the column cell. Day watermark numbers at `clamp(36px, 6vw, 90px)`.
-- **Edit Panel** (`TaskEditPanel.tsx`) — Inline panel below input bar: `[priority] [name input] [typetags] [+] [repeat] [freq] [days] [delete]`.
+- **Edit Panel** (`TaskEditPanel.tsx`) — Inline panel below input bar: `[name input] [< >] [priority] [typetags] [+] [repeat] [freq] [days] [delete]`. The `< >` arrows move the task ±1 day.
 - **Color Picker** (`ColorPicker.tsx`) — Inline 4-column strip: `[text SL] [text hue] [bg hue] [bg SL]`.
 
 ### Interactive Elements
@@ -171,20 +171,28 @@ Each task in a day cell renders as `[checkbox][task box]`:
 
 ### The Drill (Task Creation Flow)
 
-The full task creation sequence through the typer. Three phases:
+The full task creation sequence through the typer. Three phases (name > date > priority):
 
-1. **Aim** (date step) — Type to fuzzy-filter dates, producing **candidates** (all matches, 6px/0.2 highlight) and one **leader** (active match, 6px/0.7 highlight). Arrow keys move the **selector**. Tab cycles. Enter locks the day.
-2. **Name** — Type the task name. Backspace when empty returns to aim. Enter locks the name.
-3. **Heat** (priority step) — Type none/yellow/red or Tab to cycle. Backspace when empty returns to name. Enter creates the task.
+1. **Name** — Placeholder: `"task..."`. Type the task name. Backspace when empty blurs/unfocuses the typer. Enter locks the name as a breadcrumb.
+2. **Aim** (date step) — Placeholder: `"day"`. Type to fuzzy-filter dates, producing **candidates** (all matches, 6px/0.2 highlight) and one **leader** (active match, 6px/0.7 highlight). Arrow keys move the **selector** (seek mode, 0.2 highlight — not a true select). Tab cycles. Enter locks the day. Backspace when empty returns to name.
+3. **Heat** (priority step) — Placeholder: `"none / yellow / red"`. Type or Tab to cycle. Backspace when empty returns to aim. Enter creates the task.
+
+Breadcrumbs appear left-to-right matching the order you entered them. Normal flow: `[task name] [day] [input]`. If you click a day cell first (date-first entry): `[day] [task name] [input]` — then after entering a name, it skips straight to priority.
 
 ### Keyboard Navigation
 
-- **Arrow keys** — Pure date arithmetic: left/right ±1 day, up/down ±7 days. Works whether or not input is focused. First press with no date selected lands on today. Auto-navigates the month view when crossing a month boundary.
-- **Backspace** — When a task's edit panel is open and no input is focused: deletes the task.
-- **Enter** — On selector: locks day and advances to name step. In input: advances wizard step.
-- **Escape** — Unwinds: priority → name → date → blur → colors picker > settings > edit panel > snap to today.
-- **Tab** — Cycles through dates without focusing the input. Enter confirms the highlighted date and then focuses input for name entry. Shift+Tab goes backward.
+- **Arrow keys** (date step) — Snake within the current view's dates: left/right ±1 day, up/down ±7 days. Wraps around at edges, never switches month/week.
+- **Backspace** — In name step with empty input: blurs the typer. In date/priority step with empty input: goes back one step. Outside any input: deletes the selected task, or the hovered task if none selected (hover + Backspace).
+- **Enter** — Advances wizard step. In date step: locks the highlighted date.
+- **Escape** — Unwinds: priority → date → name → blur → colors picker → settings → edit panel → snap to today.
+- **Tab** — In date step: cycles through dates. In priority step: cycles options. Shift+Tab goes backward.
 - **Click name breadcrumb** — Returns to name step with text restored and cursor at end.
+
+### Nav Center Button
+
+- **Month view**: Shows full month name + year (e.g. "march 2026"). Prev/next cycle by month.
+- **Week view**: Shows month + day of the Monday (e.g. "mar 5"). Prev/next cycle by week.
+- **Click**: Snaps back to current period (today).
 
 ## Responsive Behavior
 

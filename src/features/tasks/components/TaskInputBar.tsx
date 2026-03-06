@@ -63,16 +63,16 @@ interface TaskInputBarProps {
   flashMessage?: string | null
   onEscape?: () => void
   onUserType?: () => void
-  onNavigateToDate?: (dateStr: string) => void
 }
 
-export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDateFilterChange, onLockedDateChange, resetKey, monthDates, monthTitle, onSettings, colorsOpen, onPrev, onNext, viewMode, onViewChange, onToday, flashMessage, onEscape, onUserType, onNavigateToDate }: TaskInputBarProps) {
-  const [step, setStep] = useState<Step>('date')
+export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDateFilterChange, onLockedDateChange, resetKey, monthDates, monthTitle, onSettings, colorsOpen, onPrev, onNext, viewMode, onViewChange, onToday, flashMessage, onEscape, onUserType }: TaskInputBarProps) {
+  const [step, setStep] = useState<Step>('name')
   const [inputValue, setInputValue] = useState('')
   const [isActive, setIsActive] = useState(false)
   const [tabbedDate, setTabbedDate] = useState<string | null>(null)
   const [lockedDate, setLockedDate] = useState<string | null>(null)
   const [lockedName, setLockedName] = useState<string | null>(null)
+  const [entryOrder, setEntryOrder] = useState<'name-first' | 'date-first'>('name-first')
 
   const inputRef = useRef<HTMLInputElement>(null)
   const prefilling = useRef(false)
@@ -126,7 +126,8 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
       onDateFilterChange(dates, tabbedDate)
       return
     }
-    if (tabbedDate) { onDateFilterChange([tabbedDate], tabbedDate); return }
+    // Seek mode (Tab/arrow, no text) — show as candidate (0.2), not leader
+    if (tabbedDate) { onDateFilterChange([tabbedDate], null); return }
     if (isActive && inputValue.trim()) {
       const dates = filteredDates.map(o => o.value)
       onDateFilterChange(dates, dates[0] ?? null)
@@ -141,6 +142,7 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
     if (!prefillDate) return
     prefilling.current = true
     setLockedDate(prefillDate)
+    setEntryOrder('date-first')
     setStep('name')
     setInputValue('')
     setTabbedDate(null)
@@ -153,11 +155,12 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
   }, [prefillDate, onClearPrefill])
 
   const reset = useCallback(() => {
-    setStep('date')
+    setStep('name')
     setInputValue('')
     setTabbedDate(null)
     setLockedDate(null)
     setLockedName(null)
+    setEntryOrder('name-first')
     setIsActive(false)
   }, [])
 
@@ -174,7 +177,7 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
     if (prefilling.current) return
     if (!isActive) {
       setIsActive(true)
-      setStep('date')
+      setStep('name')
       setInputValue('')
       setTabbedDate(null)
     }
@@ -197,46 +200,37 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
     setIsActive(true)
   }, [])
 
-  // Jump ±7 calendar days from the current tabbedDate (up/down arrows)
-  const cycleWeek = useCallback((backward: boolean) => {
+  // Navigate within the current view's dates — wraps around, never switches month/week
+  const navigateInView = useCallback((step: number) => {
+    const opts = allDateOptionsRef.current
+    if (opts.length === 0) return
+    // Sort chronologically for spatial navigation
+    const sorted = [...opts].sort((a, b) => a.value.localeCompare(b.value))
     const current = tabbedDateRef.current
     if (!current) {
-      // First press: start from today if visible, else fall back to linear cycle
       const todayStr = toDateString(new Date())
-      const opts = filteredDatesRef.current
-      if (opts.find(o => o.value === todayStr)) {
-        setTabbedDate(todayStr)
-        setIsActive(true)
-      } else {
-        cycleDate(backward)
-      }
+      const todayIdx = sorted.findIndex(o => o.value === todayStr)
+      setTabbedDate(sorted[todayIdx !== -1 ? todayIdx : 0].value)
+      setIsActive(true)
       return
     }
-    const d = new Date(current + 'T00:00:00')
-    d.setDate(d.getDate() + (backward ? -7 : 7))
-    const target = toDateString(d)
-    const opts = filteredDatesRef.current
-    if (opts.find(o => o.value === target)) {
-      setTabbedDate(target)
+    const currentIdx = sorted.findIndex(o => o.value === current)
+    if (currentIdx === -1) {
+      setTabbedDate(sorted[0].value)
       setIsActive(true)
-    } else {
-      cycleDate(backward)
+      return
     }
-  }, [cycleDate])
-
-  // Spatial arrow-key navigation — pure date arithmetic, no list constraint
-  const navigateByDays = useCallback((days: number) => {
-    const current = tabbedDateRef.current
-    const d = current ? new Date(current + 'T00:00:00') : new Date()
-    d.setHours(0, 0, 0, 0)
-    if (current) d.setDate(d.getDate() + days)
-    const newStr = toDateString(d)
-    setTabbedDate(newStr)
+    const nextIdx = (currentIdx + step + sorted.length) % sorted.length
+    setTabbedDate(sorted[nextIdx].value)
     setIsActive(true)
-    onNavigateToDate?.(newStr)
-  }, [onNavigateToDate])
+  }, [])
 
-  // Confirm the currently highlighted date and move to name step
+  // Jump ±7 calendar days from the current tabbedDate (up/down arrows)
+  const cycleWeek = useCallback((backward: boolean) => {
+    navigateInView(backward ? -7 : 7)
+  }, [navigateInView])
+
+  // Confirm the currently highlighted date and move to next step
   const confirmDate = useCallback(() => {
     const current = tabbedDateRef.current
     const selected =
@@ -246,7 +240,7 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
     if (selected) {
       setLockedDate(selected.value)
       setTabbedDate(null)
-      setStep('name')
+      setStep('priority')
       setInputValue('')
       setIsActive(true)
       inputRef.current?.focus()
@@ -285,10 +279,10 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
       const el = document.activeElement
       const inputFocused = el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')
       if (!inputFocused && stepRef.current === 'date') {
-        if (e.key === 'ArrowRight') { e.preventDefault(); navigateByDays(1); return }
-        if (e.key === 'ArrowLeft') { e.preventDefault(); navigateByDays(-1); return }
-        if (e.key === 'ArrowDown') { e.preventDefault(); navigateByDays(7); return }
-        if (e.key === 'ArrowUp') { e.preventDefault(); navigateByDays(-7); return }
+        if (e.key === 'ArrowRight') { e.preventDefault(); navigateInView(1); return }
+        if (e.key === 'ArrowLeft') { e.preventDefault(); navigateInView(-1); return }
+        if (e.key === 'ArrowDown') { e.preventDefault(); navigateInView(7); return }
+        if (e.key === 'ArrowUp') { e.preventDefault(); navigateInView(-7); return }
         if (e.key === 'Enter' && tabbedDateRef.current) { e.preventDefault(); confirmDate(); return }
       }
 
@@ -300,7 +294,7 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
     }
     window.addEventListener('keydown', handleGlobalKey)
     return () => window.removeEventListener('keydown', handleGlobalKey)
-  }, [cycleDate, cycleWeek, cyclePriority, confirmDate, navigateByDays])
+  }, [cycleDate, cycleWeek, cyclePriority, confirmDate, navigateInView])
 
   // Input handler — Enter, Escape, Backspace, Arrow keys (Tab handled globally above)
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -308,32 +302,34 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
 
     if (e.key === 'Escape') {
       e.preventDefault()
-      if (step === 'priority') { setLockedName(null); setStep('name'); setInputValue(''); return }
-      if (step === 'name') { setLockedDate(null); setStep('date'); setInputValue(''); return }
+      if (step === 'priority') { setLockedDate(null); setStep('date'); setInputValue(''); return }
+      if (step === 'date') { setLockedName(null); setStep('name'); setInputValue(''); return }
       reset(); inputRef.current?.blur(); onEscape?.()
       return
     }
 
-    if (step === 'date') {
-      if (e.key === 'ArrowLeft') { e.preventDefault(); cycleDate(true) }
-      else if (e.key === 'ArrowRight') { e.preventDefault(); cycleDate(false) }
-      else if (e.key === 'ArrowUp') { e.preventDefault(); cycleWeek(true) }
-      else if (e.key === 'ArrowDown') { e.preventDefault(); cycleWeek(false) }
+    if (step === 'name') {
+      if (e.key === 'Backspace' && inputValue === '') {
+        e.preventDefault(); reset(); inputRef.current?.blur(); onEscape?.()
+      } else if (e.key === 'Enter') {
+        e.preventDefault()
+        const name = inputValue.trim()
+        if (name) { setLockedName(name); setStep(lockedDate ? 'priority' : 'date'); setInputValue('') }
+      }
+    } else if (step === 'date') {
+      if (e.key === 'Backspace' && inputValue === '') {
+        e.preventDefault(); setLockedName(null); setStep('name')
+      } else if (e.key === 'ArrowLeft') { e.preventDefault(); navigateInView(-1) }
+      else if (e.key === 'ArrowRight') { e.preventDefault(); navigateInView(1) }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); navigateInView(-7) }
+      else if (e.key === 'ArrowDown') { e.preventDefault(); navigateInView(7) }
       else if (e.key === 'Enter') {
         e.preventDefault()
         confirmDate()
       }
-    } else if (step === 'name') {
-      if (e.key === 'Backspace' && inputValue === '') {
-        e.preventDefault(); setLockedDate(null); setStep('date')
-      } else if (e.key === 'Enter') {
-        e.preventDefault()
-        const name = inputValue.trim()
-        if (name) { setLockedName(name); setStep('priority'); setInputValue('') }
-      }
     } else if (step === 'priority') {
       if (e.key === 'Backspace' && inputValue === '') {
-        e.preventDefault(); setLockedName(null); setStep('name')
+        e.preventDefault(); setLockedDate(null); setStep('date')
       } else if (e.key === 'Enter') {
         e.preventDefault()
         if (lockedDate && lockedName) {
@@ -344,7 +340,7 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
     }
   }
 
-  const placeholder = step === 'date' ? 'type a day' : step === 'name' ? 'task...' : 'none / yellow / red'
+  const placeholder = step === 'name' ? 'task...' : step === 'date' ? 'day' : 'none / yellow / red'
 
   let borderColor = 'hsla(var(--h), var(--s), var(--l), 0.2)'
   if (step === 'priority' && matchedPriority) borderColor = matchedPriority.color
@@ -360,10 +356,9 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
               style={{ fontSize: 'clamp(22px, 3vw, 36px)', color: 'hsl(var(--h), var(--s), var(--l))', backgroundColor: 'hsla(var(--h), var(--s), var(--l), 0.08)', border: '3px solid hsla(var(--h), var(--s), var(--l), 0.2)', padding: '0 var(--sp-md-r)' }}>
               {'<'}
             </button>
-            <button onClick={onToday} className="font-mono font-black flex flex-col items-center justify-center uppercase active:scale-90"
-              style={{ color: 'hsl(var(--h), var(--s), var(--l))', padding: '0 var(--sp-sm-r)', lineHeight: 1.1, border: '3px solid hsla(var(--h), var(--s), var(--l), 0.2)' }}>
-              <span style={{ fontSize: 'clamp(13px, 1.8vw, 20px)' }}>{(monthTitle?.split(' ')[0] ?? '').slice(0, 3)} {new Date().getDate()}</span>
-              <span style={{ fontSize: 'clamp(13px, 1.8vw, 20px)' }}>{monthTitle?.split(' ')[1] ?? ''}</span>
+            <button onClick={onToday} className="font-mono font-black flex items-center justify-center uppercase active:scale-90 whitespace-nowrap"
+              style={{ color: 'hsl(var(--h), var(--s), var(--l))', padding: '0 var(--sp-sm-r)', fontSize: 'clamp(13px, 1.8vw, 20px)', border: '3px solid hsla(var(--h), var(--s), var(--l), 0.2)' }}>
+              {monthTitle}
             </button>
             <button onClick={onNext} className="font-mono font-black active:scale-90 flex items-center justify-center uppercase"
               style={{ fontSize: 'clamp(22px, 3vw, 36px)', color: 'hsl(var(--h), var(--s), var(--l))', backgroundColor: 'hsla(var(--h), var(--s), var(--l), 0.08)', border: '3px solid hsla(var(--h), var(--s), var(--l), 0.2)', padding: '0 var(--sp-md-r)' }}>
@@ -372,35 +367,40 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
           </div>
         )}
 
-        {lockedDate && step !== 'date' && (() => {
-          const { dayName, dayNum } = formatCalendarDay(lockedDate)
-          return (
-            <div className="flex-shrink-0 flex items-center justify-center font-mono font-black uppercase"
-              style={{ padding: '0 var(--sp-lg-r)', color: 'hsl(var(--h), var(--s), var(--l))', border: '6px solid hsla(var(--h), var(--s), var(--l), 0.5)', backgroundColor: 'hsla(var(--h), var(--s), var(--l), 0.1)', fontSize: 'clamp(13px, 1.8vw, 20px)' }}>
-              {dayName} {dayNum}
+        {(() => {
+          const nameBc = lockedName && step !== 'name' ? (
+            <div
+              key="name"
+              className="flex-shrink-0 flex items-center justify-center font-mono font-black truncate active:scale-90"
+              style={{ padding: '0 var(--sp-lg-r)', maxWidth: 'clamp(100px, 18vw, 200px)', color: 'hsl(var(--h), var(--s), var(--l))', fontSize: 'clamp(13px, 1.8vw, 20px)', border: '6px solid hsla(var(--h), var(--s), var(--l), 0.5)', backgroundColor: 'hsla(var(--h), var(--s), var(--l), 0.1)', cursor: 'default' }}
+              onClick={() => {
+                setStep('name')
+                setInputValue(lockedName)
+                setLockedName(null)
+                requestAnimationFrame(() => {
+                  const input = inputRef.current
+                  if (!input) return
+                  input.focus()
+                  input.setSelectionRange(input.value.length, input.value.length)
+                })
+              }}
+            >
+              {lockedName}
             </div>
-          )
+          ) : null
+          const dateBc = lockedDate && step !== 'date' ? (() => {
+            const { dayName, dayNum } = formatCalendarDay(lockedDate)
+            return (
+              <div
+                key="date"
+                className="flex-shrink-0 flex items-center justify-center font-mono font-black uppercase"
+                style={{ padding: '0 var(--sp-lg-r)', color: 'hsl(var(--h), var(--s), var(--l))', border: '6px solid hsla(var(--h), var(--s), var(--l), 0.5)', backgroundColor: 'hsla(var(--h), var(--s), var(--l), 0.1)', fontSize: 'clamp(13px, 1.8vw, 20px)' }}>
+                {dayName} {dayNum}
+              </div>
+            )
+          })() : null
+          return entryOrder === 'date-first' ? <>{dateBc}{nameBc}</> : <>{nameBc}{dateBc}</>
         })()}
-
-        {lockedName && step === 'priority' && (
-          <div
-            className="flex-shrink-0 flex items-center justify-center font-mono font-black truncate active:scale-90"
-            style={{ padding: '0 var(--sp-lg-r)', maxWidth: 'clamp(100px, 18vw, 200px)', color: 'hsl(var(--h), var(--s), var(--l))', fontSize: 'clamp(13px, 1.8vw, 20px)', border: '6px solid hsla(var(--h), var(--s), var(--l), 0.5)', backgroundColor: 'hsla(var(--h), var(--s), var(--l), 0.1)', cursor: 'default' }}
-            onClick={() => {
-              setStep('name')
-              setInputValue(lockedName)
-              setLockedName(null)
-              requestAnimationFrame(() => {
-                const input = inputRef.current
-                if (!input) return
-                input.focus()
-                input.setSelectionRange(input.value.length, input.value.length)
-              })
-            }}
-          >
-            {lockedName}
-          </div>
-        )}
 
         <div className="flex-1 min-w-0 relative">
           {flashMessage ? (
@@ -423,7 +423,7 @@ export function TaskInputBar({ onCreateTask, prefillDate, onClearPrefill, onDate
               }}
               placeholder={placeholder}
               className="w-full bg-transparent outline-none font-mono font-black text-center"
-              style={{ color: 'hsl(var(--h), var(--s), var(--l))', caretColor: 'hsl(var(--h), var(--s), var(--l))', fontSize: 'clamp(22px, 3vw, 36px)', border: `12px solid ${borderColor}`, padding: 'var(--sp-md-r)' }}
+              style={{ color: 'hsl(var(--h), var(--s), var(--l))', caretColor: 'hsl(var(--h), var(--s), var(--l))', fontSize: 'clamp(22px, 3vw, 36px)', border: `6px solid ${borderColor}`, padding: 'var(--sp-md-r)' }}
             />
           )}
         </div>

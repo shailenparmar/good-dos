@@ -58,15 +58,22 @@ export function useTasks() {
     // Collect children (subtasks or recurring instances)
     idsToDelete.push(...tasks.filter(t => t.parentId === id).map(t => t.id))
 
-    // If this is a generated recurring instance, cascade-delete future siblings
-    if (task?.parentId && task.parentId !== '' && task.dueDate) {
-      const futureSiblings = tasks.filter(t =>
-        t.id !== id &&
-        t.parentId === task.parentId &&
-        t.dueDate &&
-        t.dueDate >= task.dueDate!
+    // If this is a recurring child, kill the entire series:
+    // remove recurrence from the parent + delete ALL siblings
+    if (task?.parentId && task.parentId !== '') {
+      const parent = tasks.find(t => t.id === task.parentId)
+      if (parent?.recurrence) {
+        await db.tasks.update(parent.id, { recurrence: undefined, updatedAt: Date.now() })
+      }
+      const allSiblings = tasks.filter(t =>
+        t.id !== id && t.parentId === task.parentId
       )
-      idsToDelete.push(...futureSiblings.map(t => t.id))
+      idsToDelete.push(...allSiblings.map(t => t.id))
+    }
+
+    // If this is the original recurring task, strip recurrence to prevent regeneration
+    if (task?.recurrence) {
+      await db.tasks.update(id, { recurrence: undefined, updatedAt: Date.now() })
     }
 
     await db.tasks.bulkDelete([...new Set(idsToDelete)])

@@ -118,8 +118,8 @@ Any change to one view MUST be mirrored in the other. The shared rules:
 
 ### Task Rendering
 Both views render tasks as **`[square checkbox][task text box]`**:
-- **Checkbox**: `aspect-ratio: 1`, `flex-shrink-0`, fill = `getPriorityColor(priority)`, border = `0.2` default. X SVG inside (strokeWidth 12, inset 15→85) when completed.
-- **Task text box**: `flex-1 min-w-0`, border = `0.2` default, `borderLeft: none`. Typetag color shown as **background fill** (`catColor + '30'`). Font mono, weight 400.
+- **Checkbox**: `aspect-ratio: 1`, `flex-shrink-0`, fill = `getPriorityColor(priority)`, full 4-wall border at `0.2` alpha. X SVG inside (strokeWidth 12, inset 15→85) when completed.
+- **Task text box**: `flex-1 min-w-0`, full 4-wall border at `0.2` default, `marginLeft: -3px` to collapse shared border with checkbox. Typetag color shown as **background fill**. Font mono, weight 400.
 - **Row layout**: MonthView stacks tasks with `marginTop: -3px` (overlapping borders). WeekView uses `gap: var(--sp-xs)` between tasks (no border collapse).
 - **Month** renders inline in `MonthDayCell.tsx`. **Week** uses `CalendarTaskItem.tsx` in `DayColumn.tsx`.
 
@@ -134,9 +134,9 @@ All daycell highlights use `inset 0 0 0 6px` box-shadow. No border overlay divs,
 
 | State | Shadow | Alpha |
 |-------|--------|-------|
-| Leader (active filter) | `inset 0 0 0 6px` | 0.7 |
-| Locked date | `inset 0 0 0 6px` | 0.7 |
-| Selected task in cell | `inset 0 0 0 6px` | 0.7 |
+| Leader (active filter during aim) | `inset 0 0 0 6px` | 0.7 |
+| Locked date (true SELECT) | `inset 0 0 0 6px` | 0.7 |
+| Seek mode (Tab/arrow, no text) | `inset 0 0 0 6px` | 0.2 |
 | Candidate (other matches) | `inset 0 0 0 6px` | 0.2 |
 | Drag-over | `inset 0 0 0 6px` | 1.0 |
 
@@ -151,7 +151,7 @@ Both views provide date options sorted **today-first** (closest future dates fir
 Both support dragging tasks between dates via `text/task-id` dataTransfer.
 
 ### Props Passed Through
-Both views receive and forward: `onToggle`, `onCyclePriority`, `onTaskClick`, `onPlaySound(isSubtask, priority)`, `onMoveTask`, `categoryColorMap`, `selectedTaskId`, highlight/locked state.
+Both views receive and forward: `onToggle`, `onCyclePriority`, `onTaskClick`, `onPlaySound(isSubtask, priority)`, `onMoveTask`, `categoryColorMap`, `selectedTaskId`, `onTaskHover`, highlight/locked state.
 
 ## Style Rules (see docs/STYLE_GUIDE.md for full details)
 
@@ -180,21 +180,30 @@ Use `var(--sp-sm)` for fixed, `var(--sp-sm-r)` for responsive. Sub-tier values (
 
 ## TaskEditPanel
 
-Single-row layout: `[priority none|med|high] [name input] [typetags...] [+ tag] [repeat] [freq options] [day toggles] [delete]`
+Single-row layout: `[name input] [‹ ›] [priority none|med|high] [typetags...] [+ tag] [repeat] [freq options] [day toggles] [delete]`
 
+- **Date arrows** (`‹ ›`): Move the task ±1 day. Uses `onMouseDown` + `stopPropagation`. Font size matches nav arrows: `clamp(22px, 3vw, 36px)`. Only shown when task has a `dueDate`.
 - **Auto-opens** after creating a new task (CalendarView sets `selectedTask` on create).
 - **`data-edit-panel` attribute** on root div — used by TaskInputBar to skip Tab interception when focus is inside the panel.
 - **Tab trapping**: Tab cycles focus within the panel; `e.stopPropagation()` prevents global Tab handler from intercepting.
 - **Delete button**: far right via `ml-auto`, uses `onMouseDown` + `stopPropagation` (not `onClick`) to avoid conflict with click-outside handler. Styled same as other buttons (theme color, 0.2 border), NOT red.
-- **Delete cascade**: for recurring tasks, deletes that instance + all future instances in the same series.
+- **Delete cascade**: deleting ANY instance of a recurring task removes the recurrence from the parent and deletes ALL siblings (past and future). Prevents `useRecurring` from regenerating them.
+- **Hover + Backspace**: hovering over any task and pressing Backspace deletes it (no need to open the edit panel). Selected task takes priority over hovered.
 - All interactive elements in the panel use `onMouseDown` for reliability (the panel has a document-level `mousedown` click-outside listener).
 
-## Date Input (Typer)
+## Task Creation Flow (Typer)
 
-- Placeholder: `"type a day"` (date step), `"task..."` (name step), `"none / yellow / red"` (priority step)
-- Supports fuzzy matching: `"tue"` → all Tuesdays, `"18"` → day 18, `"tu25"` → Tue 25, `"today"` / `"tom"` → today/tomorrow
-- Tab cycles through filtered dates; Enter confirms the selected date
-- **Arrow keys in date step** blur the input and hand off to MonthView cursor navigation (arrow keys move the cursor cell; Enter on cursor locks the date)
+Order: **name → date → priority**
+
+- Placeholders: `"task..."` (name step), `"day"` (date step), `"none / yellow / red"` (priority step)
+- **Name step**: Type task name, Enter locks it as breadcrumb. Backspace on empty blurs the typer.
+- **Date step**: Supports fuzzy matching: `"tue"` → all Tuesdays, `"18"` → day 18, `"tu25"` → Tue 25, `"today"` / `"tom"` → today/tomorrow. Tab cycles through filtered dates; Enter confirms. Backspace on empty returns to name.
+- **Priority step**: Type or Tab to cycle. Backspace on empty returns to date. Enter creates the task.
+- **Arrow keys in date step**: snake within the current view's dates (left/right ±1, up/down ±7), wrapping at edges. Never switches month/week.
+- **Seek mode**: Tab/arrow browsing without text uses 0.2 highlight (not 0.7 leader). Only locked date and aim leader get 0.7.
+- **Day cell click (prefill)**: Locks date, goes to name step. After name, skips straight to priority.
+- **Breadcrumb order**: Reflects entry order — normal flow shows `[name] [date]`, day-click-first shows `[date] [name]`.
+- **Nav center button**: Month view shows "month year", week view shows "month day" (Monday of that week). Prev/next cycles by month or week accordingly.
 
 ## Data Models
 

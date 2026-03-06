@@ -30,16 +30,12 @@ export function useRecurring(tasks: Task[]) {
       const children = tasks.filter(t => t.parentId === original.id && t.dueDate)
       const existingDates = new Set([original.dueDate!, ...children.map(t => t.dueDate!)])
 
-      // Find the latest date in the series
-      let latestDate = original.dueDate!
-      for (const child of children) {
-        if (child.dueDate! > latestDate) latestDate = child.dueDate!
-      }
-
       const recurrence = original.recurrence!
 
-      // Generate forward from the latest date until horizon
-      let cursor = new Date(latestDate + 'T00:00:00')
+      // Always generate from the original date — existingDates prevents duplicates.
+      // This ensures newly added days (e.g. toggling Mon onto a Wed recurrence)
+      // get populated for all dates, not just after the latest existing child.
+      let cursor = new Date(original.dueDate! + 'T00:00:00')
       let safety = 0
       while (safety++ < 500) {
         const next = getNextOccurrence(

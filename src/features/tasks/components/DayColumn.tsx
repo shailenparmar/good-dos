@@ -19,6 +19,7 @@ interface DayColumnProps {
   onMoveTask?: (taskId: string, newDate: string) => void
   categoryColorMap?: Record<string, string>
   selectedTaskId?: string | null
+  onTaskHover?: (taskId: string | null) => void
 }
 
 export function DayColumn({
@@ -37,6 +38,7 @@ export function DayColumn({
   onMoveTask,
   categoryColorMap,
   selectedTaskId,
+  onTaskHover,
 }: DayColumnProps) {
   const dateStr = toDateString(date)
   const dayNum = date.getDate()
@@ -63,11 +65,11 @@ export function DayColumn({
 
   let highlightShadow = 'none'
   if (isLockedDate) {
-    highlightShadow = 'inset 0 0 0 12px hsla(var(--h), var(--s), var(--l), 0.7)'
+    highlightShadow = 'inset 0 0 0 6px hsla(var(--h), var(--s), var(--l), 0.7)'
   } else if (isHighlighted && isActiveHighlight) {
-    highlightShadow = 'inset 0 0 0 12px hsla(var(--h), var(--s), var(--l), 0.7)'
+    highlightShadow = 'inset 0 0 0 6px hsla(var(--h), var(--s), var(--l), 0.7)'
   } else if (isHighlighted) {
-    highlightShadow = 'inset 0 0 0 6px hsla(var(--h), var(--s), var(--l), 0.6)'
+    highlightShadow = 'inset 0 0 0 6px hsla(var(--h), var(--s), var(--l), 0.2)'
   }
 
   let bgColor = 'transparent'
@@ -131,6 +133,7 @@ export function DayColumn({
               onPlaySound={onPlaySound}
               categoryColor={task.categoryId ? categoryColorMap?.[task.categoryId] : undefined}
               isSelected={selectedTaskId === task.id}
+              onHover={onTaskHover}
               draggable
               onDragStart={e => {
                 e.dataTransfer.setData('text/task-id', task.id)

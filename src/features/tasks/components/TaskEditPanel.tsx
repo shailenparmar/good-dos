@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { db } from '@shared/storage/db'
 import { tagColor } from '../types'
+import { toDateString } from '@shared/utils/date'
 import type { Task, TypeTag, RecurrenceRule } from '../types'
 
 interface TaskEditPanelProps {
@@ -177,6 +178,41 @@ export function TaskEditPanel({ task, typetags, onUpdate, onDelete, onRemoveRecu
             padding: '0 var(--sp-sm-r)',
           }}
         />
+
+        {task.dueDate && (
+          <>
+            <button
+              onMouseDown={(e) => {
+                e.stopPropagation()
+                const d = new Date(task.dueDate! + 'T00:00:00')
+                d.setDate(d.getDate() - 1)
+                onUpdate(task.id, { dueDate: toDateString(d) })
+              }}
+              className="font-mono font-black active:scale-90"
+              style={{
+                color: 'hsl(var(--h), var(--s), var(--l))',
+                border: '3px solid hsla(var(--h), var(--s), var(--l), 0.2)',
+                padding: '0 var(--sp-sm-r)',
+                fontSize: 'clamp(22px, 3vw, 36px)',
+              }}
+            >‹</button>
+            <button
+              onMouseDown={(e) => {
+                e.stopPropagation()
+                const d = new Date(task.dueDate! + 'T00:00:00')
+                d.setDate(d.getDate() + 1)
+                onUpdate(task.id, { dueDate: toDateString(d) })
+              }}
+              className="font-mono font-black active:scale-90"
+              style={{
+                color: 'hsl(var(--h), var(--s), var(--l))',
+                border: '3px solid hsla(var(--h), var(--s), var(--l), 0.2)',
+                padding: '0 var(--sp-sm-r)',
+                fontSize: 'clamp(22px, 3vw, 36px)',
+              }}
+            >›</button>
+          </>
+        )}
 
         {([0, 1, 2] as const).map(p => (
           <button

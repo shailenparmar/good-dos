@@ -11,6 +11,7 @@ interface CalendarTaskItemProps {
   isSelected?: boolean
   draggable?: boolean
   onDragStart?: (e: React.DragEvent) => void
+  onHover?: (taskId: string | null) => void
 }
 
 function getPriorityColor(priority: number): string {
@@ -21,7 +22,7 @@ function getPriorityColor(priority: number): string {
   }
 }
 
-export function CalendarTaskItem({ task, onToggle, onCyclePriority: _onCyclePriority, onClick, onPlaySound, categoryColor, isSelected, draggable: isDraggable, onDragStart }: CalendarTaskItemProps) {
+export function CalendarTaskItem({ task, onToggle, onCyclePriority: _onCyclePriority, onClick, onPlaySound, categoryColor, isSelected, draggable: isDraggable, onDragStart, onHover }: CalendarTaskItemProps) {
   const [hovered, setHovered] = useState(false)
   const border = '3px solid hsla(var(--h), var(--s), var(--l), 0.2)'
 
@@ -40,7 +41,6 @@ export function CalendarTaskItem({ task, onToggle, onCyclePriority: _onCyclePrio
           aspectRatio: '1',
           backgroundColor: getPriorityColor(task.priority),
           border,
-          borderRight: 'none',
         }}
         onMouseDown={(e) => {
           e.stopPropagation()
@@ -60,12 +60,13 @@ export function CalendarTaskItem({ task, onToggle, onCyclePriority: _onCyclePrio
       <div
         className="flex-1 min-w-0 flex items-center"
         style={{
+          marginLeft: '-3px',
           border: categoryColor ? `3px solid ${categoryColor}` : border,
           backgroundColor: categoryColor ?? undefined,
           padding: 'var(--sp-xs) var(--sp-sm)',
         }}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
+        onMouseEnter={() => { setHovered(true); onHover?.(task.id) }}
+        onMouseLeave={() => { setHovered(false); onHover?.(null) }}
         onMouseDown={(e) => {
           e.stopPropagation()
           onClick(task)
